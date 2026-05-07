@@ -1,6 +1,6 @@
-# generic-administrate
+# yummy-guide-generic-administrate
 
-`generic-administrate` は、Yummy Guide 系 Rails アプリで共通利用する
+`yummy-guide-generic-administrate` は、Yummy Guide 系 Rails アプリで共通利用する
 [`Administrate`](https://github.com/thoughtbot/administrate) 拡張をまとめた Rails
 Engine です。
 
@@ -20,7 +20,7 @@ gem です。
 `Gemfile` に追加します。
 
 ```ruby
-gem "generic-administrate"
+gem "yummy-guide-generic-administrate"
 ```
 
 その後、依存 gem をインストールします。

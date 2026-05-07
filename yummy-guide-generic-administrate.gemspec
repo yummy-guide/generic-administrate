@@ -3,7 +3,7 @@
 require_relative "lib/yummy_guide/administrate/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "generic-administrate"
+  spec.name = "yummy-guide-generic-administrate"
   spec.version = YummyGuide::Administrate::VERSION
   spec.authors = ["akatsuki-kk"]
   spec.email = ["kato@yummy-guide.com"]
@@ -24,7 +24,7 @@ Gem::Specification.new do |spec|
       "Gemfile",
       "README.md",
       "Rakefile",
-      "generic-administrate.gemspec"
+      "yummy-guide-generic-administrate.gemspec"
     ]
   end
 
