@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    generic-administrate (0.1.0)
+    generic-administrate (0.1.1)
       administrate (>= 0.19, < 0.21)
       rails (>= 7.0, < 7.2)
       sprockets-rails
@@ -266,8 +266,8 @@ PLATFORMS
   arm64-darwin-25
 
 DEPENDENCIES
-  rspec (~> 3.13)
   generic-administrate!
+  rspec (~> 3.13)
 
 BUNDLED WITH
-   2.4.10
+   2.4.19
