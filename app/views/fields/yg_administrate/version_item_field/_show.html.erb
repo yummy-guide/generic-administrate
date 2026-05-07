@@ -1,0 +1,6 @@
+<% if field.linkable? %>
+  <%= link_to field.label, field.path, class: "action-show", onclick: "event.stopPropagation();" %>
+<% else %>
+  <%= field.label %>
+<% end %>
+

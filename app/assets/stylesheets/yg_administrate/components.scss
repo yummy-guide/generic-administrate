@@ -1,0 +1,199 @@
+.scroll-table {
+  overflow-x: auto;
+}
+
+.scroll-table table th.sticky-left,
+.scroll-table table td.sticky-left {
+  position: sticky;
+  background-clip: padding-box;
+}
+
+.scroll-table table th.sticky-left {
+  z-index: 4;
+  background-color: #121012;
+}
+
+.scroll-table table td.sticky-left {
+  z-index: 3;
+  background-color: var(--sticky-cell-background, #fff);
+}
+
+.scroll-table table th.sticky-left::after,
+.scroll-table table td.sticky-left::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  bottom: -1px;
+  width: 1px;
+  background-color: #fff;
+  pointer-events: none;
+}
+
+.scroll-table table th.sticky-left--last,
+.scroll-table table td.sticky-left--last {
+  box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.35);
+}
+
+.yg-administrate-filter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #fff;
+  border: 1px solid #d7dce5;
+  border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.yg-administrate-filter-form__title {
+  margin: 0;
+  padding: 20px 20px 16px;
+  font-size: 1.2rem;
+}
+
+.yg-administrate-filter-form__body {
+  padding: 0 20px;
+}
+
+.yg-administrate-filter-form .filter_table {
+  width: 100%;
+}
+
+.yg-administrate-filter-form .filter_table td {
+  padding: 8px 0;
+  vertical-align: top;
+}
+
+.yg-administrate-filter-form .filter_table td:first-child {
+  width: 160px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.yg-administrate-filter-form input[type="text"],
+.yg-administrate-filter-form input[type="date"],
+.yg-administrate-filter-form select,
+.yg-administrate-filter-form textarea,
+.yg-administrate-filter-form .filter-datetime-group__time {
+  width: 100%;
+  min-height: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  border: 1px solid #dfe0e1;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+.yg-administrate-filter-form__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 20px 20px;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.filter-datetime-group {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 88px auto 88px;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-datetime-group__separator,
+.filter-datetime-range-separator {
+  text-align: center;
+  margin: 0;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-checkbox-group {
+  display: grid;
+  gap: 12px;
+}
+
+.filter-checkbox-group__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px 12px;
+}
+
+.filter-checkbox-group__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.json-pretty-field {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.yg-administrate-picture-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.yg-administrate-picture-list__item {
+  width: 200px;
+}
+
+.yg-administrate-picture-list__image {
+  display: block;
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.yg-administrate-picture-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.yg-administrate-picture-slot {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.yg-administrate-picture-slot__input {
+  width: 100%;
+}
+
+.yg-administrate-picture-slot__delete {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+@media (max-width: 767px) {
+  .yg-administrate-filter-form__title {
+    padding: 16px 16px 12px;
+  }
+
+  .yg-administrate-filter-form__body {
+    padding: 0 16px;
+  }
+
+  .yg-administrate-filter-form__actions,
+  .filter-checkbox-group__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-datetime-group {
+    grid-template-columns: 1fr;
+  }
+}
+

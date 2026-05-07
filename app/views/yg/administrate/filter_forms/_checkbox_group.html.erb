@@ -1,0 +1,30 @@
+<% normalized_options = yg_administrate_checkbox_group_options(options,
+                                                               label_method: local_assigns[:label_method],
+                                                               value_method: local_assigns[:value_method]) %>
+<% selected = Array(selected_values).map(&:to_s) %>
+<div class="filter-checkbox-group" data-checkbox-group="<%= group_name %>">
+  <div class="filter-checkbox-group__options">
+    <% normalized_options.each do |label, value| %>
+      <% value_string = value.to_s %>
+      <label style="display: flex; align-items: center; gap: 6px;">
+        <%= check_box_tag "#{form_scope}[#{field_name}][]",
+                          value,
+                          selected.include?(value_string),
+                          id: "#{form_scope}_#{field_name}_#{value_string.parameterize(separator: "_")}",
+                          data: { checkbox_group_item: group_name } %>
+        <span><%= label %></span>
+      </label>
+    <% end %>
+  </div>
+  <div class="filter-checkbox-group__actions">
+    <%= button_tag "Select all",
+                   type: "button",
+                   class: "button button--outline-primary filter-checkbox-group__action",
+                   data: { behavior: "checkbox-group-select-all", target: group_name } %>
+    <%= button_tag "Clear all",
+                   type: "button",
+                   class: "button button--outline-primary filter-checkbox-group__action",
+                   data: { behavior: "checkbox-group-clear-all", target: group_name } %>
+  </div>
+</div>
+

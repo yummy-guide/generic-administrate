@@ -1,0 +1,25 @@
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "rspec"
+require "active_support"
+require "active_support/core_ext"
+require "active_model"
+require "action_controller"
+require "action_view"
+
+require "yg/administrate"
+Dir[File.expand_path("../app/**/*.rb", __dir__)].sort.each { |path| require path }
+
+RSpec.configure do |config|
+  config.disable_monkey_patching!
+  config.expect_with :rspec do |expectations|
+    expectations.include_chain_clauses_in_custom_matcher_descriptions = true
+  end
+
+  config.mock_with :rspec do |mocks|
+    mocks.verify_partial_doubles = true
+  end
+
+  config.shared_context_metadata_behavior = :apply_to_host_groups
+end

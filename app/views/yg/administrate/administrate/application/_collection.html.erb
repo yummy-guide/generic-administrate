@@ -1,0 +1,62 @@
+<div class="scroll-table">
+  <table aria-labelledby="<%= table_title %>" data-fixed-columns-count="<%= yg_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>">
+    <thead>
+      <tr>
+        <% collection_presenter.attribute_types.each do |attr_name, attr_type| %>
+          <th
+            class="cell-label cell-label--<%= attr_type.html_class %> cell-label--<%= collection_presenter.ordered_html_class(attr_name) %> cell-label--<%= "#{collection_presenter.resource_name}_#{attr_name}" %>"
+            scope="col"
+            aria-sort="<%= sort_order(collection_presenter.ordered_html_class(attr_name)) %>"
+          >
+            <%= link_to(sanitized_order_params(page, collection_field_name).merge(
+                  collection_presenter.order_params_for(attr_name, key: collection_field_name)
+                )) do %>
+              <%= t(
+                    "helpers.label.#{collection_presenter.resource_name}.#{attr_name}",
+                    default: resource_class.human_attribute_name(attr_name).titleize
+                  ) %>
+              <% if collection_presenter.ordered_by?(attr_name) %>
+                <span class="cell-label__sort-indicator cell-label__sort-indicator--<%= collection_presenter.ordered_html_class(attr_name) %>">
+                  <svg aria-hidden="true">
+                    <use xlink:href="#icon-up-caret" />
+                  </svg>
+                </span>
+              <% end %>
+            <% end %>
+          </th>
+        <% end %>
+        <%= render(
+              yg_administrate_collection_actions_partial("collection_header_actions"),
+              collection_presenter: collection_presenter,
+              page: page,
+              resources: resources,
+              table_title: "page-title"
+            ) %>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% resources.each do |resource| %>
+        <tr class="js-table-row">
+          <% collection_presenter.attributes_for(resource).each do |attribute| %>
+            <% cell_href = yg_administrate_collection_attribute_path(attribute: attribute, resource: resource, namespace: namespace) %>
+            <td class="cell-data cell-data--<%= attribute.html_class %>">
+              <%= yg_administrate_collection_wrap(render_field(attribute), href: cell_href) %>
+            </td>
+          <% end %>
+
+          <%= render(
+                yg_administrate_collection_actions_partial("collection_item_actions"),
+                collection_presenter: collection_presenter,
+                collection_field_name: collection_field_name,
+                page: page,
+                namespace: namespace,
+                resource: resource,
+                table_title: "page-title"
+              ) %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
