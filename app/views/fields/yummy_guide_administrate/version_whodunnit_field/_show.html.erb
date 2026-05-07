@@ -1,6 +1,5 @@
 <% if field.linkable? %>
-  <%= link_to field.label, field.path, class: "action-show", onclick: "event.stopPropagation();" %>
+  <%= link_to field.label, field.path, class: "action-show", onclick: "event.stopPropagation();", data: { behavior: "preserve-collection-link" } %>
 <% elsif field.data.present? %>
   <%= field.label %>
 <% end %>
-

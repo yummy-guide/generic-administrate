@@ -43,9 +43,12 @@ bundle install
   - datetime フィルターや checkbox group の組み立てを補助する helper
 - 共通 partial / assets
   - collection partial
+  - fixed table header partial
   - filter form partial
+  - `clipboards.js`
   - `filter_form.js`
   - `sticky_left_columns.js`
+  - `sticky_table_headers.js`
   - `components.css`
 - 共通 field
   - `YummyGuide::Administrate::Fields::JsonPrettyField`
@@ -113,6 +116,104 @@ engine の共通 partial に委譲します。
            collection_field_name: collection_field_name %>
 ```
 
+### 固定ヘッダーの設定
+
+#### 1. 最小構成
+
+gem 付属の collection partial をそのまま使う場合、table wrapper と table 本体に
+必要な `data-*` 属性はすでに入っています。そのため、JS / CSS を読み込めば固定
+ヘッダーは自動で有効になります。
+
+内部的には以下のような構造になります。
+
+```erb
+<div class="scroll-table" data-fixed-header-scroll>
+  <table
+    aria-labelledby="<%= table_title %>"
+    data-fixed-columns-count="<%= yummy_guide_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
+    data-fixed-header-source
+  >
+    ...
+  </table>
+</div>
+```
+
+#### 2. ヘッダー位置を明示したい場合
+
+固定ヘッダーの表示位置をページ上部の特定箇所に合わせたい場合は、
+`data-fixed-table-header` を持つ slot を `.main-content` 配下に置きます。
+gem には専用 partial があります。
+
+```erb
+<header class="main-content__header">
+  <h1 id="page-title">Articles</h1>
+  <%= render "yummy_guide/administrate/administrate/application/fixed_table_header" %>
+</header>
+
+<section class="main-content__body">
+  <%= render "yummy_guide/administrate/administrate/application/collection",
+             collection_presenter: collection_presenter,
+             page: page,
+             resources: resources,
+             table_title: "page-title",
+             namespace: :admin,
+             resource_class: resource_class,
+             collection_field_name: resource_name %>
+</section>
+```
+
+`fixed_table_header` partial 自体は以下の 1 行です。
+
+```erb
+<div data-fixed-table-header hidden></div>
+```
+
+この slot を置かない場合でも、JS が table の直前に自動生成します。配置を制御
+したいときだけ明示してください。
+
+#### 3. 自前の table partial を使う場合
+
+独自の collection partial を書く場合は、少なくとも以下を満たしてください。
+
+- 横スクロール wrapper に `data-fixed-header-scroll` を付ける
+- table に `data-fixed-header-source` を付ける
+- table に `data-fixed-columns-count` を付ける
+- header の `aria-labelledby` がページタイトルと対応している
+
+```erb
+<%= render "yummy_guide/administrate/administrate/application/fixed_table_header" %>
+
+<div class="scroll-table" data-fixed-header-scroll>
+  <table
+    aria-labelledby="page-title"
+    data-fixed-header-source
+    data-fixed-columns-count="<%= yummy_guide_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
+  >
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th class="sticky actions-column">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% resources.each do |resource| %>
+        <tr>
+          <td><%= resource.id %></td>
+          <td><%= resource.name %></td>
+          <td class="sticky actions-column">
+            <%= link_to "Show", [:admin, resource] %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+```
+
+`sticky actions-column` を action 列に付けると、右端列も固定できます。
+左端の固定列数は dashboard 側の `INDEX_FIXED_COLUMNS_COUNT` で制御します。
+
 ### Datetime filter
 
 filter form の枠と datetime 入力 partial を組み合わせて利用できます。
@@ -157,8 +258,10 @@ end
 この engine の asset はホストアプリ側で明示的に読み込んでください。
 
 ```js
+//= require yummy_guide_administrate/clipboards
 //= require yummy_guide_administrate/filter_form
 //= require yummy_guide_administrate/sticky_left_columns
+//= require yummy_guide_administrate/sticky_table_headers
 ```
 
 ```scss

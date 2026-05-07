@@ -130,12 +130,31 @@
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializeFromDocument, { once: true });
+    document.addEventListener("DOMContentLoaded", initializeFromDocument);
   } else {
     initializeFromDocument();
   }
 
   document.addEventListener("turbo:load", initializeFromDocument);
   window.addEventListener("resize", initializeFromDocument);
-})();
 
+  if (window.MutationObserver) {
+    var mutationObserver = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        mutation.addedNodes.forEach(function(node) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            initializeStickyColumns(node);
+          }
+        });
+      });
+    });
+
+    mutationObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  setTimeout(initializeFromDocument, 100);
+  setTimeout(initializeFromDocument, 300);
+})();

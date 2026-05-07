@@ -1,5 +1,9 @@
-<div class="scroll-table">
-  <table aria-labelledby="<%= table_title %>" data-fixed-columns-count="<%= yummy_guide_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>">
+<div class="scroll-table" data-fixed-header-scroll>
+  <table
+    aria-labelledby="<%= table_title %>"
+    data-fixed-columns-count="<%= yummy_guide_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
+    data-fixed-header-source
+  >
     <thead>
       <tr>
         <% collection_presenter.attribute_types.each do |attr_name, attr_type| %>
@@ -40,8 +44,14 @@
         <tr class="js-table-row">
           <% collection_presenter.attributes_for(resource).each do |attribute| %>
             <% cell_href = yummy_guide_administrate_collection_attribute_path(attribute: attribute, resource: resource, namespace: namespace) %>
-            <td class="cell-data cell-data--<%= attribute.html_class %>">
-              <%= yummy_guide_administrate_collection_wrap(render_field(attribute), href: cell_href) %>
+            <% cell = yummy_guide_administrate_build_collection_cell(
+                 content: render_field(attribute),
+                 present_path: cell_href,
+                 reference_link: yummy_guide_administrate_collection_reference_link?(attribute),
+                 text_link: yummy_guide_administrate_collection_text_link?(attribute)
+               ) %>
+            <td class="cell-data cell-data--<%= attribute.html_class %><%= " cell-data--link" if cell[:linkable] %>">
+              <%= cell[:content] %>
             </td>
           <% end %>
 
@@ -59,4 +69,3 @@
     </tbody>
   </table>
 </div>
-

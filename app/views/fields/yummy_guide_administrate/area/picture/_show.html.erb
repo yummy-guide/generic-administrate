@@ -6,7 +6,7 @@
       <div class="yummy-guide-administrate-picture-list__item">
         <% if preview_url.present? %>
           <% if link_url.present? %>
-            <%= link_to link_url, title: field.attachment_label(attachment) do %>
+            <%= link_to link_url, title: field.attachment_label(attachment), data: { behavior: "preserve-collection-link" } do %>
               <%= image_tag preview_url, class: "yummy-guide-administrate-picture-list__image" %>
             <% end %>
           <% else %>
@@ -21,4 +21,3 @@
 <% else %>
   No attachment
 <% end %>
-
