@@ -8,7 +8,7 @@ require "active_model"
 require "action_controller"
 require "action_view"
 
-require "yg/administrate"
+require "generic/administrate"
 Dir[File.expand_path("../app/**/*.rb", __dir__)].sort.each { |path| require path }
 
 RSpec.configure do |config|

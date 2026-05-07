@@ -1,4 +1,4 @@
-# yg-administrate
+# generic-administrate
 
 Shared `Administrate` extensions extracted from `Last Minute Japan` for reuse in
 other Yummy Guide Rails applications.
@@ -19,7 +19,7 @@ other Yummy Guide Rails applications.
 ### Base dashboard
 
 ```ruby
-class ApplicationDashboard < Yg::Administrate::ApplicationDashboard
+class ApplicationDashboard < YummyGuide::Administrate::ApplicationDashboard
 end
 ```
 
@@ -27,10 +27,10 @@ end
 
 ```ruby
 class Admin::ApplicationController < Administrate::ApplicationController
-  include Yg::Administrate::DefaultSorting
-  include Yg::Administrate::DatetimeFilterParameters
-  helper Yg::Administrate::CollectionHelper
-  helper Yg::Administrate::FilterFormHelper
+  include YummyGuide::Administrate::DefaultSorting
+  include YummyGuide::Administrate::DatetimeFilterParameters
+  helper YummyGuide::Administrate::CollectionHelper
+  helper YummyGuide::Administrate::FilterFormHelper
 end
 ```
 
@@ -40,7 +40,7 @@ Create a host-side delegating partial such as
 `app/views/administrate/application/_collection.html.erb`:
 
 ```erb
-<%= render "yg/administrate/administrate/application/collection",
+<%= render "yummy_guide/administrate/administrate/application/collection",
            collection_presenter: collection_presenter,
            page: page,
            resources: resources,
@@ -53,7 +53,7 @@ Create a host-side delegating partial such as
 ### Shared filter frame
 
 ```erb
-<%= render "yg/administrate/filter_forms/frame",
+<%= render "yummy_guide/administrate/filter_forms/frame",
            path: path,
            form: form,
            method: method,
@@ -61,7 +61,7 @@ Create a host-side delegating partial such as
   <tr>
     <td><%= f.label :start_date, "Start date" %></td>
     <td>
-      <%= render "yg/administrate/filter_forms/datetime_field",
+      <%= render "yummy_guide/administrate/filter_forms/datetime_field",
                  form_scope: form,
                  field_name: :start_date,
                  current_value: values["start_date"],
@@ -76,11 +76,11 @@ Create a host-side delegating partial such as
 Import the engine assets explicitly in the host app:
 
 ```js
-//= require yg_administrate/filter_form
-//= require yg_administrate/sticky_left_columns
+//= require yummy_guide_administrate/filter_form
+//= require yummy_guide_administrate/sticky_left_columns
 ```
 
 ```scss
- *= require yg_administrate/components
+ *= require yummy_guide_administrate/components
 ```
 

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    yg-administrate (0.1.0)
+    generic-administrate (0.1.0)
       administrate (>= 0.19, < 0.21)
       rails (>= 7.0, < 7.2)
       sprockets-rails
@@ -267,7 +267,7 @@ PLATFORMS
 
 DEPENDENCIES
   rspec (~> 3.13)
-  yg-administrate!
+  generic-administrate!
 
 BUNDLED WITH
    2.4.10
