@@ -151,7 +151,7 @@ gem には専用 partial があります。
   <%= render "yummy_guide/administrate/administrate/application/fixed_table_header" %>
 </header>
 
-<section class="main-content__body">
+<section class="main-content__body main-content__body--flush">
   <%= render "yummy_guide/administrate/administrate/application/collection",
              collection_presenter: collection_presenter,
              page: page,
@@ -166,11 +166,12 @@ gem には専用 partial があります。
 `fixed_table_header` partial 自体は以下の 1 行です。
 
 ```erb
-<div data-fixed-table-header hidden></div>
+<div class="yummy-guide-administrate-fixed-table-header" data-fixed-table-header hidden></div>
 ```
 
 この slot を置かない場合でも、JS が table の直前に自動生成します。配置を制御
-したいときだけ明示してください。
+したいときだけ明示してください。desktop では LMJ と同じく、`main-content__body--flush`
+と組み合わせることで fixed header のクリップ幅が一覧 body と揃います。
 
 #### 3. 自前の table partial を使う場合
 

@@ -1,5 +1,79 @@
 @import "fixed_submit_actions";
 
+@media screen and (min-width: 768px) {
+  .app-container {
+    --app-container-block-padding: 1.5em;
+    align-items: flex-start;
+    gap: 1.5em;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: auto;
+    overflow: visible;
+    box-sizing: border-box;
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 100%;
+    padding: var(--app-container-block-padding) 1.5em;
+  }
+
+  .navigation {
+    display: flex;
+    flex: 0 0 240px;
+    flex-direction: column;
+    width: 240px;
+    max-width: 240px;
+    height: auto;
+    max-height: calc(100vh - 3em);
+    max-height: calc(100dvh - 3em);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    position: sticky;
+    top: 1.5em;
+    align-self: flex-start;
+  }
+
+  .navigation .navigation__link__secondary {
+    margin-left: 0;
+  }
+
+  .main-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: calc(100vh - (var(--app-container-block-padding) + var(--app-container-block-padding)));
+    min-height: calc(100dvh - (var(--app-container-block-padding) + var(--app-container-block-padding)));
+    height: auto;
+    overflow: visible;
+    margin-bottom: 0;
+    padding-bottom: 1rem;
+  }
+
+  .main-content__header--sticky-table-layout {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    background: #fff;
+  }
+
+  .main-content__body--flush {
+    padding: 0 0.5em 1rem;
+  }
+
+  .table-fixed-header-slot[data-fixed-header-inline="true"] {
+    flex-basis: calc(100% + 4rem - 1em);
+    flex-shrink: 0;
+    margin: 0 calc(-2rem + 0.5em) -1rem;
+    overflow-x: hidden;
+    background: #fff;
+  }
+
+  .table-fixed-header-slot[data-fixed-header-inline="true"] .home-table--fixed-header {
+    min-width: 100%;
+    margin: 0;
+  }
+}
+
 .scroll-table {
   overflow-x: auto;
 }
@@ -418,6 +492,7 @@ td.actions-column .sticky__item,
   overflow-wrap: break-word;
   word-break: break-word;
 }
+
 
 .home-table--fixed-header th.sticky {
   position: sticky;
