@@ -60,11 +60,18 @@
     padding: 0 0.5em 1rem;
   }
 
+  .main-content__body--flush > .scroll-table {
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
   .table-fixed-header-slot[data-fixed-header-inline="true"] {
     flex-basis: calc(100% + 4rem - 1em);
     flex-shrink: 0;
     margin: 0 calc(-2rem + 0.5em) -1rem;
     overflow-x: hidden;
+    overflow-y: hidden;
     background: #fff;
   }
 
@@ -76,6 +83,10 @@
 
 .scroll-table {
   overflow-x: auto;
+}
+
+.table-fixed-header-slot {
+  overflow-y: hidden;
 }
 
 .scroll-table table th,

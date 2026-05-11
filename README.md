@@ -171,7 +171,8 @@ gem には専用 partial があります。
 
 この slot を置かない場合でも、JS が table の直前に自動生成します。配置を制御
 したいときだけ明示してください。desktop では LMJ と同じく、`main-content__body--flush`
-と組み合わせることで fixed header のクリップ幅が一覧 body と揃います。
+と組み合わせることで fixed header のクリップ幅が一覧 body と揃い、一覧 wrapper
+自体には縦スクロールを持たせません。
 
 #### 3. 自前の table partial を使う場合
 
