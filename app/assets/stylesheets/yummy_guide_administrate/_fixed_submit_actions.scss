@@ -1,0 +1,45 @@
+.admin-fixed-submit-bar {
+  position: fixed;
+  left: var(--fixed-submit-left, 0);
+  width: var(--fixed-submit-width, 100%);
+  bottom: 0;
+  z-index: 20;
+  padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid #d9dde8;
+  box-sizing: border-box;
+
+  @media screen and (max-width: 767px) {
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+  }
+}
+
+.admin-fixed-submit-bar[hidden] {
+  display: none !important;
+}
+
+.admin-fixed-submit-bar__actions,
+.admin-fixed-submit-bar__action-clone {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-fixed-submit-bar__action-clone,
+.admin-fixed-submit-bar__action-clone.form-actions,
+.admin-fixed-submit-bar__action-clone.form_submit {
+  margin: 0;
+}
+
+.admin-fixed-submit-bar__actions input[type="submit"],
+.admin-fixed-submit-bar__actions input[type="button"],
+.admin-fixed-submit-bar__actions button[type="submit"],
+.admin-fixed-submit-bar__actions button[type="button"],
+.admin-fixed-submit-bar__actions .async-form__submit {
+  min-width: 20rem;
+  min-height: 3.5rem;
+  font-size: 1.5em;
+  font-weight: 600;
+}

@@ -46,6 +46,7 @@ bundle install
   - fixed table header partial
   - filter form partial
   - `clipboards.js`
+  - `fixed_submit_actions.js`
   - `filter_form.js`
   - `sticky_left_columns.js`
   - `sticky_table_headers.js`
@@ -259,6 +260,7 @@ end
 
 ```js
 //= require yummy_guide_administrate/clipboards
+//= require yummy_guide_administrate/fixed_submit_actions
 //= require yummy_guide_administrate/filter_form
 //= require yummy_guide_administrate/sticky_left_columns
 //= require yummy_guide_administrate/sticky_table_headers
@@ -266,6 +268,56 @@ end
 
 ```scss
  *= require yummy_guide_administrate/components
+```
+
+### 固定更新ボタン
+
+管理画面の `new` / `edit` 系フォームでは、submit セクションを画面下に固定表示できます。
+この機能は `fixed_submit_actions.js` と `components.css` に含まれる style によって動作します。
+
+#### 固定対象を明示指定する場合
+
+固定したい submit セクションに `data-fixed-submit-actions="true"` を付けます。
+
+```erb
+<div class="form-actions" data-fixed-submit-actions="true">
+  <%= f.submit %>
+</div>
+```
+
+この指定がある場合、gem はその submit セクションを最優先で固定対象にします。
+1 ページに複数フォームがあっても、明示指定した submit セクションだけが固定表示されます。
+
+#### 設定しなかった場合の挙動
+
+`data-fixed-submit-actions="true"` が 1 件もない場合、gem は admin の `new` / `edit`
+ページで submit セクションを自動選択します。
+
+- 各フォーム内の `.form-actions` / `.form_submit` を候補にする
+- `form-actions--top` が付いた上部 submit は除外する
+- `data-fixed-submit-exclude="true"` が付いた submit セクションも除外する
+- 各フォームでは最後の submit セクションだけを候補にする
+- 複数フォームがあるページでは、現在表示中のフォームに対応する submit を固定する
+
+上部 submit と下部 submit の両方があるフォームでは、下部 submit が自動で選ばれます。
+
+#### fixed 帯に表示されるボタン
+
+fixed 帯には submit セクションのクローンを表示します。
+
+- 元のフォーム内ボタンの見た目は変更しない
+- fixed 帯にだけ大きいボタンサイズを適用する
+- 1 つの submit セクションに複数 submit ボタンがある場合は全部表示する
+
+#### 自動選択から除外したい場合
+
+自動選択の候補から外したい submit セクションには、`data-fixed-submit-exclude="true"`
+を付けます。
+
+```erb
+<div class="form-actions" data-fixed-submit-exclude="true">
+  <%= f.submit "Preview" %>
+</div>
 ```
 
 ### Custom field
