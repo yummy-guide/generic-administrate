@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    yummy-guide-generic-administrate (0.2.0)
+    yummy-guide-generic-administrate (0.2.1)
       administrate (>= 0.19, < 0.21)
       rails (>= 7.0, < 7.2)
       sprockets-rails
