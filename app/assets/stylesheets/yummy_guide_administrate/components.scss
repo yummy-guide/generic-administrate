@@ -7,7 +7,9 @@
 .scroll-table table th,
 .scroll-table table td,
 .sticky-table-scroll table th,
-.sticky-table-scroll table td {
+.sticky-table-scroll table td,
+.home-table th,
+.home-table td {
   vertical-align: middle;
 }
 
@@ -171,19 +173,23 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
 .scroll-table table th.sticky-left,
 .scroll-table table td.sticky-left,
 .sticky-table-scroll table th.sticky-left,
-.sticky-table-scroll table td.sticky-left {
+.sticky-table-scroll table td.sticky-left,
+.home-table th.sticky-left,
+.home-table td.sticky-left {
   position: sticky;
   background-clip: padding-box;
 }
 
 .scroll-table table th.sticky-left,
-.sticky-table-scroll table th.sticky-left {
+.sticky-table-scroll table th.sticky-left,
+.home-table th.sticky-left {
   z-index: 4;
   background-color: #121012;
 }
 
 .scroll-table table td.sticky-left,
-.sticky-table-scroll table td.sticky-left {
+.sticky-table-scroll table td.sticky-left,
+.home-table td.sticky-left {
   z-index: 3;
   background-color: var(--sticky-cell-background, #fff);
 }
@@ -191,7 +197,9 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
 .scroll-table table th.sticky-left::after,
 .scroll-table table td.sticky-left::after,
 .sticky-table-scroll table th.sticky-left::after,
-.sticky-table-scroll table td.sticky-left::after {
+.sticky-table-scroll table td.sticky-left::after,
+.home-table th.sticky-left::after,
+.home-table td.sticky-left::after {
   content: "";
   position: absolute;
   top: -1px;
@@ -205,14 +213,18 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
 .scroll-table table th.sticky-left--last,
 .scroll-table table td.sticky-left--last,
 .sticky-table-scroll table th.sticky-left--last,
-.sticky-table-scroll table td.sticky-left--last {
+.sticky-table-scroll table td.sticky-left--last,
+.home-table th.sticky-left--last,
+.home-table td.sticky-left--last {
   box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.35);
 }
 
 .scroll-table table th.sticky,
 .scroll-table table td.sticky,
 .sticky-table-scroll table th.sticky,
-.sticky-table-scroll table td.sticky {
+.sticky-table-scroll table td.sticky,
+.home-table th.sticky,
+.home-table td.sticky {
   position: sticky;
   right: 0;
   background-color: inherit;
@@ -223,7 +235,9 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
 .scroll-table table th.sticky::before,
 .scroll-table table td.sticky::before,
 .sticky-table-scroll table th.sticky::before,
-.sticky-table-scroll table td.sticky::before {
+.sticky-table-scroll table td.sticky::before,
+.home-table th.sticky::before,
+.home-table td.sticky::before {
   content: "";
   position: absolute;
   top: -1px;
@@ -235,12 +249,14 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
 }
 
 .scroll-table table th.sticky,
-.sticky-table-scroll table th.sticky {
+.sticky-table-scroll table th.sticky,
+.home-table th.sticky {
   z-index: 5;
 }
 
 .scroll-table table td.sticky,
-.sticky-table-scroll table td.sticky {
+.sticky-table-scroll table td.sticky,
+.home-table td.sticky {
   z-index: 4;
   background-color: var(--sticky-cell-background, #fff);
 }
@@ -253,7 +269,8 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
 }
 
 td.actions-column .sticky__item,
-.sticky-table-scroll td.actions-column .sticky__item {
+.sticky-table-scroll td.actions-column .sticky__item,
+.home-table td.actions-column .sticky__item {
   width: max-content;
 }
 
@@ -294,7 +311,8 @@ td.actions-column .sticky__item,
   top: 0;
 }
 
-.table-with-fixed-header thead {
+.table-with-fixed-header thead,
+.home-table--with-fixed-header thead {
   display: none;
 }
 
@@ -384,6 +402,27 @@ td.actions-column .sticky__item,
 
 [data-fixed-table-header] .table-fixed-header__table th.sticky-left--last {
   box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.35);
+}
+
+
+.home-table--fixed-header {
+  table-layout: fixed;
+}
+
+.home-table--fixed-header th {
+  position: static;
+  top: auto;
+  z-index: auto;
+  border: 1px solid #121012;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.home-table--fixed-header th.sticky {
+  position: sticky;
+  right: 0;
+  z-index: 5;
 }
 
 .yummy-guide-administrate-filter-form {
