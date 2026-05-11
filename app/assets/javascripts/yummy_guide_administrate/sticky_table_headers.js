@@ -3,6 +3,7 @@
   var WRAPPER_SELECTOR = '[data-fixed-header-scroll], .scroll-table, .home-table__wrapper, .table-wrap, .af__table__content';
   var resizeObservers = new WeakMap();
   var observedScrolls = new WeakMap();
+  var observedFixedScrolls = new WeakMap();
   var scrollSyncStates = new WeakMap();
 
   function directCells(row) {
@@ -232,8 +233,59 @@
     if (!scroll || !fixedScroll) return;
 
     var left = typeof scrollLeft === 'number' ? scrollLeft : scroll.scrollLeft;
+    var state = ensureScrollSyncState(scroll);
+    var currentLeft = preciseNumber(fixedScroll.scrollLeft);
 
+    if (Math.abs(currentLeft - left) < 0.5) {
+      state.ignoredFixedScrollLeft = null;
+      return;
+    }
+
+    state.ignoredFixedScrollLeft = preciseNumber(left);
     fixedScroll.scrollLeft = left;
+  }
+
+  function syncSourceScroll(scroll, fixedScroll, scrollLeft) {
+    if (!scroll || !fixedScroll) return;
+
+    var left = typeof scrollLeft === 'number' ? scrollLeft : fixedScroll.scrollLeft;
+    var state = ensureScrollSyncState(scroll);
+    var currentLeft = preciseNumber(scroll.scrollLeft);
+
+    if (Math.abs(currentLeft - left) < 0.5) {
+      state.ignoredSourceScrollLeft = null;
+      return;
+    }
+
+    state.ignoredSourceScrollLeft = preciseNumber(left);
+    scroll.scrollLeft = left;
+  }
+
+  function ensureScrollSyncState(scroll) {
+    var state = scrollSyncStates.get(scroll);
+
+    if (state) return state;
+
+    state = {
+      sourceFrame: null,
+      fixedFrame: null,
+      sourceScrollLeft: 0,
+      fixedScrollLeft: 0,
+      ignoredSourceScrollLeft: null,
+      ignoredFixedScrollLeft: null
+    };
+
+    scrollSyncStates.set(scroll, state);
+    return state;
+  }
+
+  function consumeIgnoredScrollLeft(state, key, scrollLeft) {
+    if (!state || state[key] === null || typeof state[key] === 'undefined') return false;
+
+    var ignoredLeft = state[key];
+    state[key] = null;
+
+    return Math.abs(ignoredLeft - preciseNumber(scrollLeft)) < 0.5;
   }
 
   function fixedHeaderTableClassName(sourceTable) {
@@ -508,25 +560,46 @@
     });
   }
 
-  function observeFixedHeaderScroll(scroll) {
+  function observeSourceScroll(scroll) {
     if (observedScrolls.has(scroll)) return;
 
     scroll.addEventListener('scroll', function() {
-      var state = scrollSyncStates.get(scroll) || {};
+      var state = ensureScrollSyncState(scroll);
+      if (consumeIgnoredScrollLeft(state, 'ignoredSourceScrollLeft', scroll.scrollLeft)) return;
+
       state.scrollLeft = scroll.scrollLeft;
+      state.sourceScrollLeft = scroll.scrollLeft;
 
-      if (state.frame) return;
+      if (state.sourceFrame) return;
 
-      state.frame = window.requestAnimationFrame(function() {
+      state.sourceFrame = window.requestAnimationFrame(function() {
         var slot = ensureFixedHeaderSlot(scroll);
-        state.frame = null;
-        syncFixedHeaderScroll(scroll, slot.querySelector('.table-fixed-header__scroll'), state.scrollLeft);
+        state.sourceFrame = null;
+        syncFixedHeaderScroll(scroll, ensureFixedHeaderScrollViewport(slot), state.sourceScrollLeft);
       });
-
-      scrollSyncStates.set(scroll, state);
     }, { passive: true });
 
     observedScrolls.set(scroll, true);
+  }
+
+  function observeFixedHeaderViewport(scroll, fixedScroll) {
+    if (!fixedScroll || observedFixedScrolls.get(fixedScroll) === scroll) return;
+
+    fixedScroll.addEventListener('scroll', function() {
+      var state = ensureScrollSyncState(scroll);
+      if (consumeIgnoredScrollLeft(state, 'ignoredFixedScrollLeft', fixedScroll.scrollLeft)) return;
+
+      state.fixedScrollLeft = fixedScroll.scrollLeft;
+
+      if (state.fixedFrame) return;
+
+      state.fixedFrame = window.requestAnimationFrame(function() {
+        state.fixedFrame = null;
+        syncSourceScroll(scroll, fixedScroll, state.fixedScrollLeft);
+      });
+    }, { passive: true });
+
+    observedFixedScrolls.set(fixedScroll, scroll);
   }
 
   function initializeFixedHeaderForScroll(scroll) {
@@ -535,8 +608,9 @@
 
     var slot = ensureFixedHeaderSlot(scroll);
     buildFixedTableHeader(slot, scroll, sourceTable);
+    observeFixedHeaderViewport(scroll, slot.querySelector('.table-fixed-header__scroll'));
     observeFixedHeader(scroll);
-    observeFixedHeaderScroll(scroll);
+    observeSourceScroll(scroll);
   }
 
   function initializeFixedHeaders(root) {
