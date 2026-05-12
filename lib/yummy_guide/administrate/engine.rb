@@ -9,6 +9,7 @@ module YummyGuide
         app.config.assets.precompile += %w[
           yummy_guide_administrate/components.css
           yummy_guide_administrate/clipboards.js
+          yummy_guide_administrate/datetime_input.js
           yummy_guide_administrate/fixed_submit_actions.js
           yummy_guide_administrate/filter_form.js
           yummy_guide_administrate/sticky_left_columns.js
