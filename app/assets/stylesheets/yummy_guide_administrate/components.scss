@@ -402,6 +402,12 @@ td.actions-column .sticky__item,
   display: none;
 }
 
+table[data-fixed-columns-count] [data-fixed-header-column-min-width] {
+  box-sizing: border-box;
+  width: var(--fixed-header-column-min-width);
+  min-width: var(--fixed-header-column-min-width);
+}
+
 [data-fixed-table-header] .table-fixed-header__table {
   width: max-content;
   min-width: 100%;

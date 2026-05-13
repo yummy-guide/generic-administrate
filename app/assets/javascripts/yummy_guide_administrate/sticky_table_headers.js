@@ -345,13 +345,14 @@
     });
   }
 
+  function mergeMeasuredCellWidths(widths, cells) {
+    cells.forEach(function(cell, index) {
+      widths[index] = Math.max(widths[index] || 0, measuredWidth(cell));
+    });
+  }
+
   function widthCandidateRows(sourceTable, headerCellCount) {
     var candidates = [];
-    var headerRow = sourceTable.querySelector('thead tr');
-
-    if (headerRow) {
-      candidates.push(headerRow);
-    }
 
     Array.from(sourceTable.querySelectorAll('tbody tr, tfoot tr')).forEach(function(row) {
       var cells = directCells(row);
@@ -363,13 +364,6 @@
     return candidates;
   }
 
-  function hasMeasurableDataRow(sourceTable, headerCellCount) {
-    return Array.from(sourceTable.querySelectorAll('tbody tr, tfoot tr')).some(function(row) {
-      var cells = directCells(row);
-      return cells.length === headerCellCount && !cells.some(function(cell) { return cell.colSpan > 1; });
-    });
-  }
-
   function removeGeneratedColGroup(table) {
     if (!table) return;
 
@@ -379,20 +373,87 @@
     }
   }
 
-  function generatedColGroupWidths(table, expectedCount) {
-    if (!table) return [];
+  function clearSourceColumnMinWidths(sourceTable) {
+    if (!sourceTable) return;
 
-    var colgroup = table.querySelector('colgroup[data-fixed-header-colgroup]');
-    if (!colgroup) return [];
-
-    var widths = Array.from(colgroup.children).map(function(col) {
-      var inlineWidth = parseFloat(col.style.width || '0');
-      return Number.isNaN(inlineWidth) ? 0 : preciseNumber(inlineWidth);
+    Array.from(sourceTable.querySelectorAll('[data-fixed-header-column-min-width]')).forEach(function(cell) {
+      restoreManagedCellWidth(cell, 'width');
+      restoreManagedCellWidth(cell, 'min-width');
+      cell.style.removeProperty('--fixed-header-column-min-width');
+      cell.removeAttribute('data-fixed-header-column-min-width');
     });
+  }
 
-    if (expectedCount && widths.length !== expectedCount) return [];
+  function managedWidthAttributeName(kind, propertyName) {
+    return 'data-fixed-header-' + kind + '-' + propertyName;
+  }
 
-    return widths;
+  function storeOriginalCellWidth(cell, propertyName) {
+    var originalAttribute = managedWidthAttributeName('original', propertyName);
+    var originalPriorityAttribute = managedWidthAttributeName('original-priority', propertyName);
+
+    if (cell.hasAttribute(originalAttribute)) return;
+
+    cell.setAttribute(originalAttribute, cell.style.getPropertyValue(propertyName));
+    cell.setAttribute(originalPriorityAttribute, cell.style.getPropertyPriority(propertyName));
+  }
+
+  function applyManagedCellWidth(cell, propertyName, value) {
+    storeOriginalCellWidth(cell, propertyName);
+    cell.style.setProperty(propertyName, value, 'important');
+    cell.setAttribute(managedWidthAttributeName('applied', propertyName), value);
+    cell.setAttribute(managedWidthAttributeName('applied-priority', propertyName), 'important');
+  }
+
+  function restoreManagedCellWidth(cell, propertyName) {
+    var originalAttribute = managedWidthAttributeName('original', propertyName);
+    var originalPriorityAttribute = managedWidthAttributeName('original-priority', propertyName);
+    var appliedAttribute = managedWidthAttributeName('applied', propertyName);
+    var appliedPriorityAttribute = managedWidthAttributeName('applied-priority', propertyName);
+    var appliedValue = cell.getAttribute(appliedAttribute);
+    var appliedPriority = cell.getAttribute(appliedPriorityAttribute);
+
+    if (
+      appliedValue === null ||
+      (
+        cell.style.getPropertyValue(propertyName) === appliedValue &&
+        cell.style.getPropertyPriority(propertyName) === (appliedPriority || '')
+      )
+    ) {
+      var originalValue = cell.getAttribute(originalAttribute);
+      var originalPriority = cell.getAttribute(originalPriorityAttribute) || '';
+
+      if (originalValue) {
+        cell.style.setProperty(propertyName, originalValue, originalPriority);
+      } else {
+        cell.style.removeProperty(propertyName);
+      }
+    }
+
+    cell.removeAttribute(originalAttribute);
+    cell.removeAttribute(originalPriorityAttribute);
+    cell.removeAttribute(appliedAttribute);
+    cell.removeAttribute(appliedPriorityAttribute);
+  }
+
+  function applySourceColumnMinWidths(sourceTable, widths) {
+    if (!sourceTable || !widths.length) return;
+
+    Array.from(sourceTable.querySelectorAll('thead tr, tbody tr, tfoot tr')).forEach(function(row) {
+      var cells = directCells(row);
+      if (cells.length !== widths.length || cells.some(function(cell) { return cell.colSpan > 1; })) return;
+
+      cells.forEach(function(cell, index) {
+        var width = widths[index];
+        if (!width) return;
+
+        var widthValue = cssPixelValue(width);
+        cell.style.setProperty('--fixed-header-column-min-width', widthValue);
+        applyManagedCellWidth(cell, 'width', widthValue);
+        applyManagedCellWidth(cell, 'min-width', widthValue);
+        cell.setAttribute('data-fixed-header-column-min-width', 'true');
+      });
+    });
   }
 
   function clearFixedHeaderState(slot, scroll, sourceTable) {
@@ -403,6 +464,7 @@
     if (!sourceTable) return;
 
     removeGeneratedColGroup(sourceTable);
+    clearSourceColumnMinWidths(sourceTable);
     sourceTable.classList.remove('table-with-fixed-header');
 
     if (sourceTable.classList.contains('home-table')) {
@@ -425,25 +487,14 @@
     var widths = headerCells.map(function() { return 0; });
 
     widthCandidateRows(sourceTable, headerCells.length).forEach(function(row) {
-      directCells(row).forEach(function(cell, index) {
-        widths[index] = Math.max(widths[index], measuredWidth(cell));
-      });
+      mergeMeasuredCellWidths(widths, directCells(row));
     });
 
-    if (!widths.some(Boolean)) {
-      var generatedWidths = generatedColGroupWidths(sourceTable, headerCells.length);
-      if (generatedWidths.length) {
-        widths = generatedWidths.slice();
-      }
-    }
-
-    if (!widths.some(Boolean) && fixedTable && settings.allowFixedTableFallback !== false) {
+    if (fixedTable && settings.allowFixedTableFallback !== false) {
       var fixedRow = fixedTable.querySelector('thead tr');
       var fixedCells = fixedRow ? directCells(fixedRow) : [];
 
-      fixedCells.forEach(function(cell, index) {
-        widths[index] = Math.max(widths[index] || 0, measuredWidth(cell));
-      });
+      mergeMeasuredCellWidths(widths, fixedCells);
     }
 
     return widths;
@@ -483,12 +534,15 @@
 
     var sourceRow = sourceHead.querySelector('tr');
     var headerCells = sourceRow ? directCells(sourceRow) : [];
-    var hasDataRow = hasMeasurableDataRow(sourceTable, headerCells.length);
 
     if (!headerCells.length) {
       clearFixedHeaderState(slot, scroll, sourceTable);
       return;
     }
+
+    slot.hidden = false;
+    removeGeneratedColGroup(sourceTable);
+    clearSourceColumnMinWidths(sourceTable);
 
     var fixedScroll = ensureFixedHeaderScrollViewport(slot);
     var fixedTable = fixedScroll.querySelector('.table-fixed-header__table');
@@ -501,6 +555,7 @@
 
     fixedTable.className = fixedHeaderTableClassName(sourceTable);
     fixedTable.dataset.fixedColumnsCount = sourceTable.dataset.fixedColumnsCount || '0';
+    fixedTable.style.width = '';
     fixedTable.innerHTML = sourceHead.outerHTML;
 
     if (fixedTable.parentNode !== fixedScroll) {
@@ -509,15 +564,13 @@
       fixedScroll.appendChild(fixedSpacer);
     }
 
-    var widths = measuredColumnWidths(sourceTable, fixedTable, {
-      allowFixedTableFallback: hasDataRow
-    });
+    var widths = measuredColumnWidths(sourceTable, fixedTable);
     if (!widths.some(Boolean)) {
       clearFixedHeaderState(slot, scroll, sourceTable);
       return;
     }
 
-    applyColGroup(sourceTable, widths);
+    applySourceColumnMinWidths(sourceTable, widths);
     applyColGroup(fixedTable, widths);
     applyFixedHeaderCellWidths(fixedTable, widths);
     applyFixedHeaderStickyColumns(sourceTable, fixedTable, widths);
