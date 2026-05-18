@@ -43,6 +43,8 @@ bundle install
   - datetime フィルターや checkbox group の組み立てを補助する helper
 - `YummyGuide::Administrate::DatetimeInputHelper`
   - 管理画面フォーム用の date + time 入力 helper
+- `YummyGuide::Administrate::NumberInputHelper`
+  - 管理画面フォーム用の number input text 化 helper
 - 共通 partial / assets
   - collection partial
   - fixed table header partial
@@ -102,8 +104,13 @@ class Admin::ApplicationController < Administrate::ApplicationController
   helper YummyGuide::Administrate::CollectionHelper
   helper YummyGuide::Administrate::DatetimeInputHelper
   helper YummyGuide::Administrate::FilterFormHelper
+  helper YummyGuide::Administrate::NumberInputHelper
 end
 ```
+
+`NumberInputHelper` は `Administrate::ApplicationController` の view helper として
+自動適用されます。`Administrate::ApplicationController` を継承しない独自 admin
+controller で同じ挙動が必要な場合だけ、上記のように明示的に読み込んでください。
 
 ### Collection partial
 
@@ -292,6 +299,19 @@ def search_term
   normalized_filters
 end
 ```
+
+### Number input helper
+
+Admin/Administrate 画面では、`number_field` / `number_field_tag` を
+`type="text"` かつ `inputmode="decimal"` の input として描画します。これにより、
+ブラウザ標準の number spinner や mouse wheel による意図しない数値変更を避けます。
+
+`class`, `id`, `name`, `value`, `data`, `required`, `disabled`, `readonly`,
+`placeholder` などの通常 option は維持されます。`min`, `max`, `step`, `in`,
+`within` は `type="number"` 前提のブラウザ制御なので出力しません。
+
+`range_field` / `range_field_tag` は対象外で、従来どおり `type="range"` として描画
+されます。raw HTML の `<input type="number">` は helper を通らないため対象外です。
 
 ### Asset の読み込み
 
