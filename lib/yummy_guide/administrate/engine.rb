@@ -11,17 +11,20 @@ module YummyGuide
           yummy_guide_administrate/clipboards.js
           yummy_guide_administrate/datetime_input.js
           yummy_guide_administrate/fixed_submit_actions.js
+          yummy_guide_administrate/filter_controls.js
           yummy_guide_administrate/filter_form.js
           yummy_guide_administrate/sticky_left_columns.js
           yummy_guide_administrate/sticky_table_headers.js
         ]
       end
 
-      initializer "yummy_guide.administrate.number_input_helper" do |app|
+      initializer "yummy_guide.administrate.helpers" do |app|
         app.config.to_prepare do
           next unless defined?(::Administrate::ApplicationController)
 
           ::Administrate::ApplicationController.helper YummyGuide::Administrate::NumberInputHelper
+          ::Administrate::ApplicationController.helper YummyGuide::Administrate::FilterFormHelper
+          ::Administrate::ApplicationController.helper YummyGuide::Administrate::FilterControlsHelper
         end
       end
     end

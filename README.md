@@ -41,6 +41,8 @@ bundle install
   - 一覧テーブルの固定列数、リンク生成、action partial 解決を補助する helper
 - `YummyGuide::Administrate::FilterFormHelper`
   - datetime フィルターや checkbox group の組み立てを補助する helper
+- `YummyGuide::Administrate::FilterControlsHelper`
+  - dashboard の Field 型フィルター定義から Filter ボタンとモーダルフォームを描画する helper
 - `YummyGuide::Administrate::DatetimeInputHelper`
   - 管理画面フォーム用の date + time 入力 helper
 - `YummyGuide::Administrate::NumberInputHelper`
@@ -52,6 +54,7 @@ bundle install
   - `clipboards.js`
   - `datetime_input.js`
   - `fixed_submit_actions.js`
+  - `filter_controls.js`
   - `filter_form.js`
   - `sticky_left_columns.js`
   - `sticky_table_headers.js`
@@ -103,6 +106,7 @@ class Admin::ApplicationController < Administrate::ApplicationController
 
   helper YummyGuide::Administrate::CollectionHelper
   helper YummyGuide::Administrate::DatetimeInputHelper
+  helper YummyGuide::Administrate::FilterControlsHelper
   helper YummyGuide::Administrate::FilterFormHelper
   helper YummyGuide::Administrate::NumberInputHelper
 end
@@ -300,6 +304,41 @@ def search_term
 end
 ```
 
+### Dashboard driven filter controls
+
+dashboard に `FILTER_ATTRIBUTES` を定義すると、`admin_filter_controls` で既存の
+Administrate index header に Filter ボタンとモーダルフォームを描画できます。
+
+```ruby
+class AdspendDashboard < ApplicationDashboard
+  FILTER_PATH = ->(view, _locals) { view.admin_adspends_path }
+
+  FILTER_ATTRIBUTES = {
+    campaign_name: YummyGuide::Administrate::Filters::Text.with_options(label: "Campaign name"),
+    yearmonth: YummyGuide::Administrate::Filters::Text.with_options(
+      label: "Year month",
+      inputmode: "numeric",
+      pattern: "\\d{6}",
+      placeholder: "YYYYMM"
+    )
+  }.freeze
+end
+```
+
+```erb
+<%= admin_filter_controls(
+      page: page,
+      search_options: search_options
+    ) %>
+```
+
+送信先は helper の `path:` / `clear_path:` で明示することもできます。helper の指定が
+ある場合は dashboard の `FILTER_PATH` / `FILTER_CLEAR_PATH` より優先されます。
+
+標準 Field は `Text`, `Select`, `Checkbox`, `RadioGroup`, `CheckboxGroup`,
+`DateRange`, `DatetimeRange`, `DatetimeLocalRange`, `Custom` です。
+`label`, `collection`, `default`, `if` などの option は Proc も指定できます。
+
 ### Number input helper
 
 Admin/Administrate 画面では、`number_field` / `number_field_tag` を
@@ -321,6 +360,7 @@ Admin/Administrate 画面では、`number_field` / `number_field_tag` を
 //= require yummy_guide_administrate/clipboards
 //= require yummy_guide_administrate/datetime_input
 //= require yummy_guide_administrate/fixed_submit_actions
+//= require yummy_guide_administrate/filter_controls
 //= require yummy_guide_administrate/filter_form
 //= require yummy_guide_administrate/sticky_left_columns
 //= require yummy_guide_administrate/sticky_table_headers
