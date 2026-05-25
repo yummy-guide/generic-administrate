@@ -309,9 +309,14 @@ end
 dashboard に `FILTER_ATTRIBUTES` を定義すると、`admin_filter_controls` で既存の
 Administrate index header に Filter ボタンとモーダルフォームを描画できます。
 
+#### Filter の設定方法
+
+1. dashboard に送信先と filter 対象項目を定義します。
+
 ```ruby
 class AdspendDashboard < ApplicationDashboard
   FILTER_PATH = ->(view, _locals) { view.admin_adspends_path }
+  FILTER_CLEAR_PATH = ->(view, _locals) { view.admin_adspends_path }
 
   FILTER_ATTRIBUTES = {
     campaign_name: YummyGuide::Administrate::Filters::Text.with_options(label: "Campaign name"),
@@ -325,6 +330,9 @@ class AdspendDashboard < ApplicationDashboard
 end
 ```
 
+2. index header などで `admin_filter_controls` を呼び出します。`page` から dashboard を
+   解決し、`FILTER_ATTRIBUTES` が存在する場合だけ Filter ボタンとフォームを描画します。
+
 ```erb
 <%= admin_filter_controls(
       page: page,
@@ -332,12 +340,99 @@ end
     ) %>
 ```
 
-送信先は helper の `path:` / `clear_path:` で明示することもできます。helper の指定が
-ある場合は dashboard の `FILTER_PATH` / `FILTER_CLEAR_PATH` より優先されます。
+送信先は helper の `path:` / `clear_path:` で明示することもできます。helper の指定は
+dashboard の `FILTER_PATH` / `FILTER_CLEAR_PATH` より優先されます。
+
+```erb
+<%= admin_filter_controls(
+      page: page,
+      path: admin_adspends_path,
+      clear_path: admin_adspends_path,
+      search_options: search_options,
+      filter_locals: { show_discarded_filter: false },
+      root_hidden_fields: { "reservation[order]" => current_order[:order] },
+      extra_actions: [button_tag("Download PDF", type: "button", class: "button")]
+    ) %>
+```
 
 標準 Field は `Text`, `Select`, `Checkbox`, `RadioGroup`, `CheckboxGroup`,
 `DateRange`, `DatetimeRange`, `DatetimeLocalRange`, `Custom` です。
-`label`, `collection`, `default`, `if` などの option は Proc も指定できます。
+主な option は次のとおりです。
+
+- 共通: `label`, `default`, `if`, `class`, `id`, `placeholder`, `inputmode`, `pattern`
+- 選択系: `collection` または `options`, `select_options`
+- checkbox: `checked_value`, `unchecked_value`
+- checkbox group: `group`
+- range: `from`, `to`, `from_default`, `to_default`, `css_class`
+
+`label`, `collection`, `default`, `if` などの option には Proc も指定できます。Proc は
+arity に応じて `call`, `call(view_context)`, `call(view_context, filter_locals)` のいずれかで評価されます。
+
+```ruby
+FILTER_ATTRIBUTES = {
+  owner_id: YummyGuide::Administrate::Filters::Text.with_options(
+    label: "Owner ID",
+    inputmode: "numeric",
+    if: ->(view, _locals) { !view.current_user&.owner? }
+  ),
+  status: YummyGuide::Administrate::Filters::Select.with_options(
+    label: "Status",
+    collection: ->(_view, locals) { locals[:status_collection] },
+    select_options: { include_blank: true }
+  )
+}.freeze
+```
+
+#### カスタム Filter の作成方法
+
+既存の Field 型で表現できない場合は、partial を使う方法と独自クラスを定義する方法があります。
+
+partial だけで足りる場合は `Custom` を使います。partial には `form`, `form_scope`,
+`field`, `current_values`, `filter_locals` が渡されます。
+
+```ruby
+FILTER_ATTRIBUTES = {
+  price_range: YummyGuide::Administrate::Filters::Custom.with_options(
+    partial: "admin/filters/price_range"
+  )
+}.freeze
+```
+
+```erb
+<tr>
+  <td><%= form.label field.name, field.label_text(self, filter_locals) %></td>
+  <td>
+    <%= form.number_field :min_price, value: current_values["min_price"] %>
+    <%= form.number_field :max_price, value: current_values["max_price"] %>
+  </td>
+  <%= filter_field_clear_cell if respond_to?(:filter_field_clear_cell) %>
+</tr>
+```
+
+複数画面で再利用する filter 型は `YummyGuide::Administrate::Filters::Base` を継承して作ります。
+単一 input なら `input` を実装し、行全体を制御したい場合は `row` または `input_cell` を上書きします。
+
+```ruby
+class CurrencyFilter < YummyGuide::Administrate::Filters::Base
+  private
+
+  def input(view_context, form, current_values, locals)
+    form.select(
+      name,
+      view_context.options_for_select(options.fetch(:collection), current_value(current_values)),
+      { include_blank: true },
+      html_options(view_context, locals)
+    )
+  end
+end
+
+FILTER_ATTRIBUTES = {
+  payout_currency: CurrencyFilter.with_options(
+    label: "Currency",
+    collection: [["JPY", "JPY"], ["USD", "USD"]]
+  )
+}.freeze
+```
 
 ### Number input helper
 
