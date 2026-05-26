@@ -43,6 +43,12 @@
       });
     });
 
+    formEl.querySelectorAll('[data-behavior="filter-field-clear"]').forEach(function(buttonEl) {
+      buttonEl.addEventListener("click", function(event) {
+        clearFilterField(formEl, event);
+      });
+    });
+
     formEl.querySelectorAll('[data-behavior="checkbox-group-select-all"]').forEach(function(buttonEl) {
       buttonEl.addEventListener("click", function() {
         setCheckboxGroupState(formEl, buttonEl.dataset.target, true);
@@ -55,6 +61,19 @@
       });
     });
 
+    syncDatetimeFilterFields(formEl);
+  }
+
+  function clearFilterField(formEl, event) {
+    event.preventDefault();
+
+    var rowEl = event.currentTarget.closest("tr");
+    if (!rowEl) return;
+
+    clearTextControls(rowEl);
+    clearChoiceControls(rowEl);
+    clearSelectControls(rowEl);
+    clearDatetimeFilters(rowEl);
     syncDatetimeFilterFields(formEl);
   }
 
@@ -84,6 +103,57 @@
     });
 
     syncDatetimeFilterFields(formEl);
+  }
+
+  function clearTextControls(rowEl) {
+    rowEl.querySelectorAll("input, textarea").forEach(function(inputEl) {
+      var inputType = (inputEl.getAttribute("type") || "").toLowerCase();
+
+      if (inputType === "checkbox" || inputType === "radio") return;
+      if (inputType === "hidden" && inputEl.dataset.datetimePart !== "combined") return;
+
+      inputEl.value = "";
+      inputEl.setAttribute("value", "");
+    });
+  }
+
+  function clearChoiceControls(rowEl) {
+    rowEl.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(function(inputEl) {
+      inputEl.checked = false;
+    });
+  }
+
+  function clearSelectControls(rowEl) {
+    rowEl.querySelectorAll("select").forEach(function(selectEl) {
+      if (selectEl.querySelector('option[value=""]')) {
+        selectEl.value = "";
+      } else if (selectEl.querySelector('option[value="all"]')) {
+        selectEl.value = "all";
+      } else {
+        selectEl.selectedIndex = -1;
+      }
+    });
+  }
+
+  function clearDatetimeFilters(rowEl) {
+    rowEl.querySelectorAll("[data-datetime-filter]").forEach(function(groupEl) {
+      var combinedEl = groupEl.querySelector('[data-datetime-part="combined"]');
+      var dateEl = groupEl.querySelector('[data-datetime-part="date"]');
+
+      if (combinedEl) {
+        combinedEl.value = "";
+        combinedEl.setAttribute("value", "");
+      }
+
+      if (dateEl) {
+        dateEl.value = "";
+        dateEl.setAttribute("value", "");
+      }
+
+      clearDatetimeTimeParts(groupEl);
+      syncDatetimeTimeDisabledState(groupEl);
+      syncBlankMinuteOptionState(groupEl);
+    });
   }
 
   function setCheckboxGroupState(formEl, groupName, checked) {
@@ -216,4 +286,3 @@
 
   document.addEventListener("turbo:load", initializeFromDocument);
 })();
-

@@ -409,6 +409,10 @@ FILTER_ATTRIBUTES = {
 </tr>
 ```
 
+`filter_form.js` を読み込んでいる場合、`data-behavior="filter-field-clear"` を持つ
+button は同じ `tr` 内の input / select / textarea / checkbox / radio / datetime
+filter だけをクリアします。
+
 複数画面で再利用する filter 型は `YummyGuide::Administrate::Filters::Base` を継承して作ります。
 単一 input なら `input` を実装し、行全体を制御したい場合は `row` または `input_cell` を上書きします。
 
