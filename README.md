@@ -355,13 +355,14 @@ dashboard の `FILTER_PATH` / `FILTER_CLEAR_PATH` より優先されます。
     ) %>
 ```
 
-標準 Field は `Text`, `Select`, `Checkbox`, `RadioGroup`, `CheckboxGroup`,
-`DateRange`, `DatetimeRange`, `DatetimeLocalRange`, `Custom` です。
+標準 Field は `Text`, `Select`, `Checkbox`, `RadioGroup`, `BooleanRadioGroup`,
+`CheckboxGroup`, `DateRange`, `DatetimeRange`, `DatetimeLocalRange`, `Custom` です。
 主な option は次のとおりです。
 
 - 共通: `label`, `default`, `if`, `class`, `id`, `placeholder`, `inputmode`, `pattern`
 - 選択系: `collection` または `options`, `select_options`
 - checkbox: `checked_value`, `unchecked_value`
+- boolean radio group: `unspecified_label`, `true_label`, `false_label`
 - checkbox group: `group`
 - range: `from`, `to`, `from_default`, `to_default`, `css_class`
 
@@ -379,6 +380,12 @@ FILTER_ATTRIBUTES = {
     label: "Status",
     collection: ->(_view, locals) { locals[:status_collection] },
     select_options: { include_blank: true }
+  ),
+  visible: YummyGuide::Administrate::Filters::BooleanRadioGroup.with_options(
+    label: "Visible",
+    unspecified_label: "-",
+    true_label: "Visible",
+    false_label: "Hidden"
   )
 }.freeze
 ```

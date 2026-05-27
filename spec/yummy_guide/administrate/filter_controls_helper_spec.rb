@@ -49,6 +49,38 @@ RSpec.describe YummyGuide::Administrate::FilterControlsHelper do
       expect(document.at_css('select[name="search_options[status]"] option[selected]')["value"]).to eq("closed")
     end
 
+    # boolean radio group が未指定・true・falseを横並びで描画し、ラベルと選択状態を反映することを確認する
+    it "renders boolean radio group controls with custom labels" do
+      dashboard = Class.new
+      dashboard.const_set(
+        :FILTER_ATTRIBUTES,
+        {
+          visible: YummyGuide::Administrate::Filters::BooleanRadioGroup.with_options(
+            label: "Visible",
+            unspecified_label: "-",
+            true_label: "Visible",
+            false_label: "Hidden"
+          )
+        }.freeze
+      )
+
+      html = helper_host.admin_filter_controls(
+        dashboard: dashboard,
+        path: "/admin/resources",
+        search_options: { visible: "false" }
+      )
+      document = fragment(html)
+
+      wrapper = document.at_css('input[name="search_options[visible]"]').ancestors("div").first
+
+      expect(document.at_css('input[type="radio"][name="search_options[visible]"][value=""]')).to be_present
+      expect(document.at_css('input[type="radio"][name="search_options[visible]"][value="true"]')).to be_present
+      expect(document.at_css('input[type="radio"][name="search_options[visible]"][value="false"]')).to be_present
+      expect(document.at_css('input[type="radio"][name="search_options[visible]"][value="false"]')["checked"]).to eq("checked")
+      expect(wrapper["style"]).to include("display: flex")
+      expect(document.text).to include("-", "Visible", "Hidden")
+    end
+
     # dashboard に定義した FILTER_PATH をフィルター送信先として利用できることを確認する
     it "uses dashboard filter path when no explicit path is passed" do
       dashboard = Class.new

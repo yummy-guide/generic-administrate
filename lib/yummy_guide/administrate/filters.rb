@@ -152,6 +152,39 @@ module YummyGuide
         end
       end
 
+      class BooleanRadioGroup < Base
+        protected
+
+        def input_cell(view_context, _form, scope, current_values, locals)
+          selected = current_value(current_values).to_s
+          controls = boolean_options(view_context, locals).map do |label, value|
+            value_string = value.to_s
+            id = "#{scope}_#{name}_#{value_string.presence || "unspecified"}".parameterize(separator: "_")
+
+            view_context.content_tag(:label, style: "display: inline-flex; align-items: center; gap: 6px;") do
+              view_context.safe_join([
+                view_context.radio_button_tag("#{scope}[#{name}]", value, selected == value_string, id: id),
+                view_context.content_tag(:span, label)
+              ])
+            end
+          end
+
+          view_context.content_tag(:td) do
+            view_context.content_tag(:div, view_context.safe_join(controls), style: "display: flex; align-items: center; gap: 12px; flex-wrap: wrap;")
+          end
+        end
+
+        private
+
+        def boolean_options(view_context, locals)
+          [
+            [evaluate_option(options.fetch(:unspecified_label, "Unspecified"), view_context, locals), ""],
+            [evaluate_option(options.fetch(:true_label, "true"), view_context, locals), "true"],
+            [evaluate_option(options.fetch(:false_label, "false"), view_context, locals), "false"]
+          ]
+        end
+      end
+
       class CheckboxGroup < Base
         protected
 
