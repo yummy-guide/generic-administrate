@@ -18,6 +18,30 @@ RSpec.describe YummyGuide::Administrate::ApplicationDashboard do
     end
   end
 
+  describe ".index_mobile_fixed_columns_count" do
+    it "uses the subclass mobile constant when defined" do
+      subclass = Class.new(described_class)
+      subclass.const_set(:INDEX_FIXED_COLUMNS_COUNT, 5)
+      subclass.const_set(:INDEX_MOBILE_FIXED_COLUMNS_COUNT, 2)
+
+      expect(subclass.index_mobile_fixed_columns_count).to eq(2)
+    end
+
+    it "caps a subclass desktop fixed column count to one by default" do
+      subclass = Class.new(described_class)
+      subclass.const_set(:INDEX_FIXED_COLUMNS_COUNT, 5)
+
+      expect(subclass.index_mobile_fixed_columns_count).to eq(1)
+    end
+
+    it "keeps zero fixed columns on mobile when desktop fixed columns are zero" do
+      subclass = Class.new(described_class)
+      subclass.const_set(:INDEX_FIXED_COLUMNS_COUNT, 0)
+
+      expect(subclass.index_mobile_fixed_columns_count).to eq(0)
+    end
+  end
+
   describe ".collection_attribute_sortable?" do
     it "uses collection attributes when explicit sortable attributes are absent" do
       subclass = Class.new(described_class)

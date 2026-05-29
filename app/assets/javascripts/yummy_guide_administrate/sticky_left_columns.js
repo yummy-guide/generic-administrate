@@ -1,5 +1,6 @@
 (function() {
   var TABLE_SELECTOR = "table[data-fixed-columns-count]";
+  var MOBILE_MEDIA_QUERY = "(max-width: 767px)";
   var resizeObservers = new WeakMap();
 
   function directCells(row) {
@@ -31,8 +32,18 @@
   }
 
   function fixedColumnsCount(table) {
-    var parsedCount = parseInt(table.dataset.fixedColumnsCount || "0", 10);
+    var rawCount = table.dataset.fixedColumnsCount || "0";
+
+    if (isMobile() && table.dataset.mobileFixedColumnsCount) {
+      rawCount = table.dataset.mobileFixedColumnsCount;
+    }
+
+    var parsedCount = parseInt(rawCount, 10);
     return Number.isNaN(parsedCount) ? 0 : Math.max(parsedCount, 0);
+  }
+
+  function isMobile() {
+    return window.matchMedia && window.matchMedia(MOBILE_MEDIA_QUERY).matches;
   }
 
   function stickyOffsets(table, count) {

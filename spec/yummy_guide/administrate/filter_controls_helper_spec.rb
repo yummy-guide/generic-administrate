@@ -42,8 +42,12 @@ RSpec.describe YummyGuide::Administrate::FilterControlsHelper do
         search_options: { keyword: "tokyo", status: "closed" }
       )
       document = fragment(html)
+      close_button = document.at_css('button.filter-form__close[data-behavior="filter-form-close"]')
 
       expect(document.at_css("#reserv-filter-options > a.button").text).to eq("Filter")
+      expect(document.at_css(".filter-form__header .filter-form__title").text).to eq("Filter Options")
+      expect(close_button["aria-label"]).to eq("Close")
+      expect(close_button["type"]).to eq("button")
       expect(document.at_css("form.filter-form")["action"]).to eq("/admin/resources")
       expect(document.at_css('input[name="search_options[keyword]"]')["value"]).to eq("tokyo")
       expect(document.at_css('select[name="search_options[status]"] option[selected]')["value"]).to eq("closed")

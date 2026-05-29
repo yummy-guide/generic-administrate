@@ -1,6 +1,7 @@
 (function() {
   var TABLE_SELECTOR = 'table[data-fixed-columns-count]';
   var WRAPPER_SELECTOR = '[data-fixed-header-scroll], .scroll-table, .home-table__wrapper, .table-wrap, .af__table__content';
+  var MOBILE_MEDIA_QUERY = '(max-width: 767px)';
   var resizeObservers = new WeakMap();
   var observedScrolls = new WeakMap();
   var observedFixedScrolls = new WeakMap();
@@ -36,8 +37,18 @@
   }
 
   function fixedColumnsCount(table) {
-    var parsedCount = parseInt(table.dataset.fixedColumnsCount || '0', 10);
+    var rawCount = table.dataset.fixedColumnsCount || '0';
+
+    if (isMobile() && table.dataset.mobileFixedColumnsCount) {
+      rawCount = table.dataset.mobileFixedColumnsCount;
+    }
+
+    var parsedCount = parseInt(rawCount, 10);
     return Number.isNaN(parsedCount) ? 0 : Math.max(parsedCount, 0);
+  }
+
+  function isMobile() {
+    return window.matchMedia && window.matchMedia(MOBILE_MEDIA_QUERY).matches;
   }
 
   function stickyOffsets(widths) {
@@ -555,6 +566,7 @@
 
     fixedTable.className = fixedHeaderTableClassName(sourceTable);
     fixedTable.dataset.fixedColumnsCount = sourceTable.dataset.fixedColumnsCount || '0';
+    fixedTable.dataset.mobileFixedColumnsCount = sourceTable.dataset.mobileFixedColumnsCount || fixedTable.dataset.fixedColumnsCount;
     fixedTable.style.width = '';
     fixedTable.innerHTML = sourceHead.outerHTML;
 
