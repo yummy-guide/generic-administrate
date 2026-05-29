@@ -14,6 +14,7 @@ module YummyGuide
           yummy_guide_administrate/filter_controls.js
           yummy_guide_administrate/filter_form.js
           yummy_guide_administrate/sticky_left_columns.js
+          yummy_guide_administrate/resizable_navigation.js
           yummy_guide_administrate/sticky_table_headers.js
         ]
       end
