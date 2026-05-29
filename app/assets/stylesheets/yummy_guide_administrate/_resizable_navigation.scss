@@ -1,0 +1,156 @@
+@media screen and (min-width: 768px) {
+  .app-container > .navigation,
+  body.admin-body > aside {
+    --admin-navigation-default-width: 240px;
+    align-self: flex-start;
+    box-sizing: border-box;
+    flex: 0 0 clamp(25px, var(--admin-navigation-width, var(--admin-navigation-default-width)), 250px);
+    max-height: calc(100vh - 2rem);
+    min-width: 25px;
+    max-width: 250px;
+    overflow: visible;
+    position: sticky;
+    top: 1rem;
+    width: clamp(25px, var(--admin-navigation-width, var(--admin-navigation-default-width)), 250px);
+  }
+
+  body.admin-body > aside:not(.navigation) {
+    --admin-navigation-default-width: 13rem;
+  }
+
+  .app-container > .navigation {
+    max-height: calc(100vh - 3em);
+    max-height: calc(100dvh - 3em);
+    top: 1.5em;
+  }
+
+  .app-container > .main-content,
+  body.admin-body > main.admin-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+    width: auto;
+  }
+
+  body.admin-body > main.main-content {
+    width: auto;
+  }
+
+  .admin-navigation-resize-handle {
+    bottom: 0;
+    cursor: col-resize;
+    position: absolute;
+    right: 0;
+    top: 0;
+    touch-action: none;
+    width: 8px;
+    z-index: 2;
+
+    &::after {
+      background-color: transparent;
+      bottom: 0;
+      content: "";
+      left: 3px;
+      position: absolute;
+      top: 0;
+      transition: background-color 0.15s ease;
+      width: 2px;
+    }
+
+    &:hover::after {
+      background-color: #9aa8ba;
+    }
+  }
+
+  .admin-navigation-scroll-area {
+    max-height: inherit;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .admin-navigation--resizing .admin-navigation-resize-handle::after {
+    background-color: #5d7596;
+  }
+
+  .admin-navigation-scroll-area .menubar,
+  .admin-navigation-scroll-area .menubar a,
+  .admin-navigation-scroll-area .menubar__group-label,
+  .admin-navigation-scroll-area .navigation__link,
+  .admin-navigation-scroll-area .navigation__link__secondary {
+    white-space: nowrap;
+  }
+
+  .admin-navigation-scroll-area .menubar {
+    margin-right: 0;
+  }
+
+  .admin-navigation-scroll-area .menubar li.menubar__item {
+    padding-left: 0;
+  }
+
+  .admin-navigation-scroll-area .menubar li a,
+  .admin-navigation-scroll-area .navigation__link {
+    box-sizing: border-box;
+    margin-left: 0;
+    margin-right: 0;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .admin-navigation-scroll-area .menubar li.menubar__item a {
+    padding-left: 36px;
+  }
+
+  .admin-navigation-scroll-area .button_to {
+    margin: 0;
+  }
+
+  .admin-navigation-scroll-area .btn_public,
+  .admin-navigation-scroll-area .btn_logout {
+    box-sizing: border-box;
+    margin-left: 0;
+    margin-right: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  .admin-navigation-tooltip {
+    background-color: #1f2933;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    color: #fff;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    max-width: 260px;
+    opacity: 0;
+    padding: 6px 8px;
+    pointer-events: none;
+    position: fixed;
+    transform: translateX(-2px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    white-space: nowrap;
+    z-index: 1000;
+  }
+
+  .admin-navigation-tooltip--visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  body.admin-navigation-is-resizing,
+  body.admin-navigation-is-resizing * {
+    cursor: col-resize !important;
+    user-select: none;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .admin-navigation-resize-handle {
+    display: none;
+  }
+}
