@@ -661,6 +661,27 @@ table[data-fixed-columns-count] [data-fixed-header-column-min-width] {
 }
 
 @media (max-width: 767px) {
+  .scroll-table,
+  .sticky-table-scroll,
+  .home-table__wrapper,
+  .table-wrap,
+  .af__table__content {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+  }
+
+  .scroll-table table[data-fixed-columns-count],
+  .sticky-table-scroll table[data-fixed-columns-count],
+  .home-table__wrapper table[data-fixed-columns-count],
+  .table-wrap table[data-fixed-columns-count],
+  .af__table__content table[data-fixed-columns-count] {
+    min-width: max-content;
+  }
+
   .yummy-guide-administrate-filter-form__title {
     padding: 16px 16px 12px;
   }

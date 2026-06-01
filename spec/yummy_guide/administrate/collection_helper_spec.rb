@@ -37,6 +37,23 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
     end
   end
 
+  describe "#yummy_guide_administrate_collection_table_mobile_fixed_columns_count" do
+    # dashboard のモバイル固定列数も表示列数を超えないことを確認する
+    it "caps the mobile fixed column count by the number of visible attributes" do
+      dashboard_class = Class.new do
+        def self.index_mobile_fixed_columns_count
+          4
+        end
+      end
+
+      page = Object.new
+      page.instance_variable_set(:@dashboard, dashboard_class.new)
+      collection_presenter = Struct.new(:attribute_types).new({ id: :integer, name: :string })
+
+      expect(helper_host.yummy_guide_administrate_collection_table_mobile_fixed_columns_count(page: page, collection_presenter: collection_presenter)).to eq(2)
+    end
+  end
+
   describe "#yummy_guide_administrate_build_collection_cell" do
     let(:present_path) { "/admin/articles/test-article" }
 

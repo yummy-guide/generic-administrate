@@ -9,16 +9,19 @@ module YummyGuide
       ].freeze
 
       def yummy_guide_administrate_collection_table_fixed_columns_count(page:, collection_presenter:)
-        return 0 unless page.respond_to?(:instance_variable_defined?) && page.instance_variable_defined?(:@dashboard)
+        yummy_guide_administrate_collection_fixed_columns_count_for(
+          page: page,
+          collection_presenter: collection_presenter,
+          method_name: :index_fixed_columns_count
+        )
+      end
 
-        dashboard = page.instance_variable_get(:@dashboard)
-        return 0 unless dashboard&.class&.respond_to?(:index_fixed_columns_count)
-
-        fixed_columns_count = dashboard.class.index_fixed_columns_count.to_i
-        fixed_columns_count = 0 if fixed_columns_count.negative?
-
-        attribute_count = collection_presenter.attribute_types.size
-        [fixed_columns_count, attribute_count].min
+      def yummy_guide_administrate_collection_table_mobile_fixed_columns_count(page:, collection_presenter:)
+        yummy_guide_administrate_collection_fixed_columns_count_for(
+          page: page,
+          collection_presenter: collection_presenter,
+          method_name: :index_mobile_fixed_columns_count
+        )
       rescue NoMethodError
         0
       end
@@ -86,6 +89,21 @@ module YummyGuide
       end
 
       private
+
+      def yummy_guide_administrate_collection_fixed_columns_count_for(page:, collection_presenter:, method_name:)
+        return 0 unless page.respond_to?(:instance_variable_defined?) && page.instance_variable_defined?(:@dashboard)
+
+        dashboard = page.instance_variable_get(:@dashboard)
+        return 0 unless dashboard&.class&.respond_to?(method_name)
+
+        fixed_columns_count = dashboard.class.public_send(method_name).to_i
+        fixed_columns_count = 0 if fixed_columns_count.negative?
+
+        attribute_count = collection_presenter.attribute_types.size
+        [fixed_columns_count, attribute_count].min
+      rescue NoMethodError
+        0
+      end
 
       def yummy_guide_administrate_collection_link(content, href:, target: nil, html_class: "action-show", aria: nil, data: nil)
         return content if href.blank?

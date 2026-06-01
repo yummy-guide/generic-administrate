@@ -17,7 +17,8 @@ module YummyGuide
         extra_actions: [],
         button_label: "Filter",
         title: "Filter Options",
-        submit_label: "Filter"
+        submit_label: "Filter",
+        close_label: "Close"
       )
         dashboard ||= admin_filter_dashboard_from_page(page)
         scope = form.to_s
@@ -63,7 +64,8 @@ module YummyGuide
                 locals: locals,
                 extra_actions: extra_actions,
                 title: title,
-                submit_label: submit_label
+                submit_label: submit_label,
+                close_label: close_label
               )
             ])
           end
@@ -104,7 +106,7 @@ module YummyGuide
           .select { |field| field.visible?(self, locals) }
       end
 
-      def admin_filter_form(fields:, scope:, path:, clear_path:, method:, current_values:, hidden_fields:, root_hidden_fields:, locals:, extra_actions:, title:, submit_label:)
+      def admin_filter_form(fields:, scope:, path:, clear_path:, method:, current_values:, hidden_fields:, root_hidden_fields:, locals:, extra_actions:, title:, submit_label:, close_label:)
         form_with(
           url: path,
           scope: scope,
@@ -119,7 +121,7 @@ module YummyGuide
         ) do |f|
           safe_join([
             admin_filter_hidden_fields(scope, hidden_fields, root_hidden_fields),
-            content_tag(:h2, title, class: "filter-form__title"),
+            admin_filter_form_header(title: title, close_label: close_label),
             content_tag(:div, class: "filter-form__body") do
               content_tag(:table, class: "filter_table") do
                 safe_join(fields.map { |field| field.row(self, f, scope, current_values, locals) })
@@ -132,6 +134,22 @@ module YummyGuide
                 f.submit(submit_label, class: "submit_filter")
               ].flatten)
             end
+          ])
+        end
+      end
+
+      def admin_filter_form_header(title:, close_label:)
+        content_tag(:div, class: "filter-form__header") do
+          safe_join([
+            content_tag(:h2, title, class: "filter-form__title"),
+            button_tag(
+              "x",
+              type: "button",
+              class: "filter-form__close",
+              data: { behavior: "filter-form-close" },
+              aria: { label: close_label },
+              title: close_label
+            )
           ])
         end
       end

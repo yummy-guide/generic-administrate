@@ -25,6 +25,18 @@ module YummyGuide
         end
       end
 
+      def self.index_mobile_fixed_columns_count
+        if const_defined?(:INDEX_MOBILE_FIXED_COLUMNS_COUNT, false)
+          const_get(:INDEX_MOBILE_FIXED_COLUMNS_COUNT)
+        elsif const_defined?(:INDEX_FIXED_COLUMNS_COUNT, false)
+          [index_fixed_columns_count.to_i, 1].min
+        elsif superclass.respond_to?(:index_mobile_fixed_columns_count)
+          superclass.index_mobile_fixed_columns_count
+        else
+          [index_fixed_columns_count.to_i, 1].min
+        end
+      end
+
       def self.collection_sortable_attributes
         if const_defined?(:COLLECTION_SORTABLE_ATTRIBUTES, false)
           const_get(:COLLECTION_SORTABLE_ATTRIBUTES)
@@ -43,4 +55,3 @@ module YummyGuide
     end
   end
 end
-
