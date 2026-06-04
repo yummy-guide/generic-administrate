@@ -48,7 +48,7 @@
     z-index: 2;
 
     &::after {
-      background-color: transparent;
+      background-color: #d1d5db;
       bottom: 0;
       content: "";
       left: 3px;
@@ -59,8 +59,12 @@
     }
 
     &:hover::after {
-      background-color: #9aa8ba;
+      background-color: #4b5563;
     }
+  }
+
+  .admin-navigation--resizing .admin-navigation-resize-handle::after {
+    background-color: #374151;
   }
 
   .admin-navigation-scroll-area {
@@ -68,10 +72,6 @@
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-  }
-
-  .admin-navigation--resizing .admin-navigation-resize-handle::after {
-    background-color: #5d7596;
   }
 
   .admin-navigation-scroll-area .menubar,
@@ -97,6 +97,10 @@
     margin-right: 0;
     overflow: hidden;
     width: 100%;
+  }
+
+  .admin-navigation-scroll-area .navigation__link--indented {
+    text-indent: 16px;
   }
 
   .admin-navigation-scroll-area .menubar li.menubar__item a {

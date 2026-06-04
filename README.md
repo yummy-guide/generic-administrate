@@ -138,7 +138,8 @@ engine の共通 partial に委譲します。
 
 gem 付属の collection partial をそのまま使う場合、table wrapper と table 本体に
 必要な `data-*` 属性はすでに入っています。そのため、JS / CSS を読み込めば固定
-ヘッダーは自動で有効になります。
+ヘッダーとカラム幅調整は自動で有効になります。カラム幅調整を使う場合は
+`yummy_guide_administrate/column_resizer.js` も読み込んでください。
 
 内部的には以下のような構造になります。
 
@@ -153,6 +154,8 @@ gem 付属の collection partial をそのまま使う場合、table wrapper と
   </table>
 </div>
 ```
+
+複数画面で幅設定を共有したい場合は、render local に `column_width_storage_scope: "admin.reservations"` のような任意の scope 名を渡してください。
 
 #### 2. ヘッダー位置を明示したい場合
 

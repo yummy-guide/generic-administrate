@@ -54,6 +54,29 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
     end
   end
 
+  describe "#yummy_guide_administrate_collection_column_id" do
+    let(:collection_presenter) { Struct.new(:resource_name).new("external_reservation") }
+
+    # 一覧カラム幅の保存に使う ID が列順ではなくリソース名と属性名から決まることを確認する
+    it "builds a stable id from the resource name and attribute name" do
+      expect(helper_host.yummy_guide_administrate_collection_column_id(collection_presenter, :customer_name)).to eq("external_reservation.customer_name")
+    end
+
+    # 手書き追加カラムも同じ形式の ID で保存対象にできることを確認する
+    it "normalizes custom column names" do
+      expect(helper_host.yummy_guide_administrate_collection_column_id(collection_presenter, "Article Pages")).to eq("external_reservation.article_pages")
+    end
+  end
+
+  describe "#yummy_guide_administrate_collection_actions_column_id" do
+    # actions 列も通常カラムと同じ保存キー体系に入ることを確認する
+    it "builds the actions column id" do
+      collection_presenter = Struct.new(:resource_name).new("reservation")
+
+      expect(helper_host.yummy_guide_administrate_collection_actions_column_id(collection_presenter)).to eq("reservation.actions")
+    end
+  end
+
   describe "#yummy_guide_administrate_build_collection_cell" do
     let(:present_path) { "/admin/articles/test-article" }
 

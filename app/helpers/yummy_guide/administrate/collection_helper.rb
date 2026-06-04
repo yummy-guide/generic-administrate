@@ -26,6 +26,17 @@ module YummyGuide
         0
       end
 
+      def yummy_guide_administrate_collection_column_id(collection_presenter, column_name)
+        [
+          collection_presenter.resource_name,
+          column_name
+        ].map { |segment| segment.to_s.parameterize(separator: "_") }.join(".")
+      end
+
+      def yummy_guide_administrate_collection_actions_column_id(collection_presenter)
+        yummy_guide_administrate_collection_column_id(collection_presenter, :actions)
+      end
+
       def yummy_guide_administrate_build_collection_cell(content:, present_path: nil, target: nil, reference_link: false, text_link: false, leading_actions: nil, copy_text: nil, copy_text_transform: nil)
         normalized_content = yummy_guide_administrate_collection_cell_content(content)
 

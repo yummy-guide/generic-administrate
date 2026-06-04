@@ -1,8 +1,12 @@
+<% column_width_storage_scope = local_assigns[:column_width_storage_scope].presence %>
 <div class="scroll-table" data-fixed-header-scroll>
   <table
     aria-labelledby="<%= table_title %>"
     data-fixed-columns-count="<%= yummy_guide_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
     data-mobile-fixed-columns-count="<%= yummy_guide_administrate_collection_table_mobile_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
+    <% if column_width_storage_scope %>
+      data-column-resizer-storage-scope="<%= column_width_storage_scope %>"
+    <% end %>
     data-fixed-header-source
   >
     <thead>
@@ -12,6 +16,7 @@
             class="cell-label cell-label--<%= attr_type.html_class %> cell-label--<%= collection_presenter.ordered_html_class(attr_name) %> cell-label--<%= "#{collection_presenter.resource_name}_#{attr_name}" %>"
             scope="col"
             aria-sort="<%= sort_order(collection_presenter.ordered_html_class(attr_name)) %>"
+            data-column-id="<%= yummy_guide_administrate_collection_column_id(collection_presenter, attr_name) %>"
           >
             <%= link_to(sanitized_order_params(page, collection_field_name).merge(
                   collection_presenter.order_params_for(attr_name, key: collection_field_name)

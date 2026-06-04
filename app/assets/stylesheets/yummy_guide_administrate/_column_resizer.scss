@@ -1,0 +1,64 @@
+.admin-column-resizer__header {
+  position: relative;
+}
+
+.admin-column-resizer__handle {
+  position: absolute;
+  top: 0;
+  right: -5px;
+  bottom: 0;
+  z-index: 20;
+  width: 12px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.admin-column-resizer__handle::after {
+  content: "";
+  position: absolute;
+  top: 20%;
+  right: 3px;
+  bottom: 20%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.45);
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.admin-column-resizer__header:hover > .admin-column-resizer__handle::after,
+.admin-column-resizer__handle:focus-visible::after,
+.admin-column-resizer--dragging .admin-column-resizer__handle::after {
+  opacity: 1;
+}
+
+.admin-column-resizer__handle:hover::after,
+.admin-column-resizer__handle:focus-visible::after {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.admin-column-resizer--dragging,
+.admin-column-resizer--dragging * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+[data-fixed-table-header] .admin-column-resizer__handle {
+  pointer-events: auto;
+}
+
+[data-fixed-table-header] .table-fixed-header__table th.admin-column-resizer__header:not(.sticky):not(.sticky-left) {
+  position: relative;
+}
+
+@media (pointer: coarse), screen and (max-width: 767px) {
+  .admin-column-resizer__handle {
+    right: -10px;
+    width: 28px;
+  }
+
+  .admin-column-resizer__handle::after {
+    right: 13px;
+    background: rgba(255, 255, 255, 0.75);
+    opacity: 1;
+  }
+}
