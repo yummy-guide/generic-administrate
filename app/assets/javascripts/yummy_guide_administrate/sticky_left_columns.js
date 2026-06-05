@@ -25,6 +25,37 @@
     return preciseNumber(value) + "px";
   }
 
+  function headerColumnId(header) {
+    return header.dataset.adminColumnResizerColumnId || header.dataset.columnId || "";
+  }
+
+  function columnIndex(headerCells, columnId) {
+    if (!columnId) return -1;
+
+    return headerCells.findIndex(function(header) {
+      return headerColumnId(header) === columnId;
+    });
+  }
+
+  function widthOverride(headerCells, options) {
+    var settings = options || {};
+    var width = parseFloat(settings.width);
+    var index = columnIndex(headerCells, settings.columnId);
+
+    if (index < 0 || Number.isNaN(width)) return null;
+
+    return {
+      index: index,
+      width: preciseNumber(width)
+    };
+  }
+
+  function applyWidthOverride(widths, override) {
+    if (!override || override.index >= widths.length) return;
+
+    widths[override.index] = override.width;
+  }
+
   function resetStickyColumns(table) {
     table.querySelectorAll(".sticky-left").forEach(function(cell) {
       cell.classList.remove("sticky-left", "sticky-left--last");
@@ -47,15 +78,18 @@
     return window.matchMedia && window.matchMedia(MOBILE_MEDIA_QUERY).matches;
   }
 
-  function stickyOffsets(table, count) {
+  function stickyOffsets(table, count, options) {
     var headerRow = table.querySelector("thead tr");
     if (!headerRow) return [];
 
-    var widths = directCells(headerRow).slice(0, count).map(function(cell) {
+    var headerCells = directCells(headerRow);
+    var override = widthOverride(headerCells, options);
+    var widths = headerCells.slice(0, count).map(function(cell) {
       return measuredWidth(cell);
     });
+    var hasMeasuredWidth = widths.some(Boolean);
 
-    if (!widths.some(Boolean)) {
+    if (!hasMeasuredWidth) {
       Array.from(table.querySelectorAll("tbody tr, tfoot tr")).some(function(row) {
         var cells = directCells(row);
         if (cells.length < count || cells.some(function(cell) { return cell.colSpan > 1; })) return false;
@@ -66,6 +100,8 @@
         return widths.some(Boolean);
       });
     }
+
+    applyWidthOverride(widths, override);
 
     var offsets = [];
     var currentLeft = 0;
@@ -78,13 +114,13 @@
     return offsets;
   }
 
-  function applyStickyColumns(table) {
+  function applyStickyColumns(table, options) {
     resetStickyColumns(table);
 
     var count = fixedColumnsCount(table);
     if (count === 0) return;
 
-    var offsets = stickyOffsets(table, count);
+    var offsets = stickyOffsets(table, count, options);
     if (offsets.length === 0) return;
 
     table.querySelectorAll("thead tr, tbody tr, tfoot tr").forEach(function(row) {
@@ -123,6 +159,21 @@
 
     suppressResizeApply(table);
     applyStickyColumns(table);
+
+    return true;
+  }
+
+  function refreshColumnWidth(options) {
+    var settings = options || {};
+    var table = settings.sourceTable;
+
+    if (!table) return false;
+
+    suppressResizeApply(table);
+    applyStickyColumns(table, {
+      columnId: settings.columnId,
+      width: settings.width
+    });
 
     return true;
   }
@@ -181,6 +232,7 @@
   window.addEventListener("resize", initializeFromDocument);
 
   window.YummyGuideAdministrateStickyLeftColumns = {
+    refreshColumnWidth: refreshColumnWidth,
     refreshTable: refreshTable
   };
 
