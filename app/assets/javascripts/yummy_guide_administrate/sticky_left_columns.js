@@ -2,6 +2,7 @@
   var TABLE_SELECTOR = "table[data-fixed-columns-count]";
   var MOBILE_MEDIA_QUERY = "(max-width: 767px)";
   var resizeObservers = new WeakMap();
+  var suppressedResizeTables = new WeakMap();
 
   function directCells(row) {
     return Array.from(row.children).filter(function(cell) {
@@ -100,11 +101,41 @@
     });
   }
 
+  function suppressResizeApply(table) {
+    if (!table) return;
+
+    var token = (suppressedResizeTables.get(table) || 0) + 1;
+    suppressedResizeTables.set(table, token);
+
+    window.setTimeout(function() {
+      if (suppressedResizeTables.get(table) === token) {
+        suppressedResizeTables.delete(table);
+      }
+    }, 250);
+  }
+
+  function resizeApplySuppressed(table) {
+    return suppressedResizeTables.has(table);
+  }
+
+  function refreshTable(table) {
+    if (!table) return false;
+
+    suppressResizeApply(table);
+    applyStickyColumns(table);
+
+    return true;
+  }
+
   function observeStickyColumns(table) {
     if (!window.ResizeObserver || resizeObservers.has(table)) return;
 
     var observer = new ResizeObserver(function() {
+      if (resizeApplySuppressed(table)) return;
+
       window.requestAnimationFrame(function() {
+        if (resizeApplySuppressed(table)) return;
+
         applyStickyColumns(table);
       });
     });
@@ -148,6 +179,10 @@
 
   document.addEventListener("turbo:load", initializeFromDocument);
   window.addEventListener("resize", initializeFromDocument);
+
+  window.YummyGuideAdministrateStickyLeftColumns = {
+    refreshTable: refreshTable
+  };
 
   if (window.MutationObserver) {
     var mutationObserver = new MutationObserver(function(mutations) {
