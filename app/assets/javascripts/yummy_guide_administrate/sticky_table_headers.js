@@ -678,6 +678,22 @@
     return true;
   }
 
+  function refreshTable(sourceTable, callback) {
+    if (!sourceTable) return false;
+
+    var scroll = sourceTable.closest(WRAPPER_SELECTOR);
+    if (!scroll) return false;
+
+    suppressResizeBuild(scroll);
+    initializeFixedHeaderForScroll(scroll);
+
+    if (callback) {
+      window.requestAnimationFrame(callback);
+    }
+
+    return true;
+  }
+
   function buildFixedTableHeader(slot, scroll, sourceTable) {
     if (!slot || !scroll || !sourceTable) return;
 
@@ -870,7 +886,8 @@
   window.addEventListener('resize', initializeFromDocument);
 
   window.YummyGuideAdministrateStickyTableHeaders = {
-    refreshColumnWidth: refreshColumnWidth
+    refreshColumnWidth: refreshColumnWidth,
+    refreshTable: refreshTable
   };
 
   if (window.MutationObserver) {

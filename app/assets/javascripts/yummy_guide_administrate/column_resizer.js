@@ -16,6 +16,7 @@
   var dragState = null;
   var dragPreviewFrame = null;
   var widthApplyFrame = null;
+  var pendingWidthApply = null;
   var generatedRuleCount = 0;
   var initializedHandles = new WeakSet();
   var tableStates = new WeakMap();
@@ -568,6 +569,30 @@
     return event.pointerType !== 'mouse' || event.button === 0;
   }
 
+  function stopDragging(removePreview) {
+    if (!dragState) return null;
+
+    if (dragPreviewFrame) {
+      window.cancelAnimationFrame(dragPreviewFrame);
+      dragPreviewFrame = null;
+    }
+
+    if (removePreview) {
+      removeDragPreview();
+    }
+
+    releaseDragPointerCapture();
+
+    var completedDrag = dragState;
+    dragState = null;
+    document.body.classList.remove(DRAGGING_BODY_CLASS);
+    document.removeEventListener('pointermove', handleDragMove);
+    document.removeEventListener('pointerup', finishDrag);
+    document.removeEventListener('pointercancel', finishDrag);
+
+    return completedDrag;
+  }
+
   function scheduleDragWidth(width) {
     dragState.currentWidth = width;
     dragState.moved = dragState.moved || Math.abs(width - dragState.startWidth) > 2;
@@ -601,6 +626,18 @@
     scheduleStickyRefresh(callback);
   }
 
+  function refreshStickyHeaderTable(sourceTable, callback) {
+    var api = window.YummyGuideAdministrateStickyTableHeaders;
+
+    if (api && typeof api.refreshTable === 'function') {
+      var refreshed = api.refreshTable(sourceTable, callback);
+
+      if (refreshed) return;
+    }
+
+    scheduleStickyRefresh(callback);
+  }
+
   function refreshStickyLeftColumns(sourceTable) {
     var api = window.YummyGuideAdministrateStickyLeftColumns;
 
@@ -609,10 +646,52 @@
     }
   }
 
-  function stopApplyingWidth(preview) {
-    removePreview(preview);
+  function refreshStickyLeftColumnsForWidth(pendingWidth) {
+    var api = window.YummyGuideAdministrateStickyLeftColumns;
+
+    if (!api) return;
+
+    if (typeof api.refreshColumnWidth === 'function') {
+      var refreshed = api.refreshColumnWidth({
+        sourceTable: pendingWidth.sourceTable,
+        columnId: pendingWidth.columnId,
+        width: pendingWidth.width
+      });
+
+      if (refreshed) return;
+    }
+
+    refreshStickyLeftColumns(pendingWidth.sourceTable);
+  }
+
+  function startApplyingWidth() {
+    applyingWidth = true;
+    document.body.classList.add(APPLYING_BODY_CLASS);
+  }
+
+  function stopApplyingState() {
     applyingWidth = false;
     document.body.classList.remove(APPLYING_BODY_CLASS);
+  }
+
+  function stopApplyingWidth(preview) {
+    removePreview(preview);
+    pendingWidthApply = null;
+    stopApplyingState();
+  }
+
+  function cancelPendingWidthApply() {
+    if (widthApplyFrame) {
+      window.cancelAnimationFrame(widthApplyFrame);
+      widthApplyFrame = null;
+    }
+
+    if (pendingWidthApply) {
+      removePreview(pendingWidthApply.preview);
+      pendingWidthApply = null;
+    }
+
+    stopApplyingState();
   }
 
   function applyPendingWidth(pendingWidth) {
@@ -621,7 +700,7 @@
       applyColumnWidth(pendingWidth.columnId, pendingWidth.width, pendingWidth.storageKey);
       widths[pendingWidth.columnId] = preciseNumber(pendingWidth.width);
       safeWriteWidths(pendingWidth.storageKey, widths);
-      refreshStickyLeftColumns(pendingWidth.sourceTable);
+      refreshStickyLeftColumnsForWidth(pendingWidth);
       refreshStickyHeaderColumn(pendingWidth, function() {
         stopApplyingWidth(pendingWidth.preview);
       });
@@ -632,8 +711,8 @@
   }
 
   function schedulePendingWidthApply(pendingWidth) {
-    applyingWidth = true;
-    document.body.classList.add(APPLYING_BODY_CLASS);
+    pendingWidthApply = pendingWidth;
+    startApplyingWidth();
 
     widthApplyFrame = window.requestAnimationFrame(function() {
       widthApplyFrame = window.requestAnimationFrame(function() {
@@ -705,6 +784,8 @@
     }
 
     flushDragPreview();
+    var pointerCancelled = event && event.type === 'pointercancel';
+    var shouldApplyWidth = dragState.moved && !pointerCancelled;
 
     var pendingWidth = {
       columnId: dragState.columnId,
@@ -714,12 +795,9 @@
       preview: dragState.preview
     };
 
-    releaseDragPointerCapture();
-    dragState = null;
-    document.body.classList.remove(DRAGGING_BODY_CLASS);
-    document.removeEventListener('pointermove', handleDragMove);
-    document.removeEventListener('pointerup', finishDrag);
-    document.removeEventListener('pointercancel', finishDrag);
+    stopDragging(!shouldApplyWidth);
+    if (!shouldApplyWidth) return;
+
     schedulePendingWidthApply(pendingWidth);
   }
 
@@ -733,6 +811,8 @@
 
     event.preventDefault();
     event.stopPropagation();
+    cancelPendingWidthApply();
+    stopDragging(true);
 
     var sourceTable = sourceTableForHandle(handle);
     var key = storageKeyForTable(sourceTable || handle.closest(TABLE_SELECTOR));
@@ -740,7 +820,17 @@
     delete widths[columnId];
     safeWriteWidths(key, widths);
     clearColumnWidth(columnId, key);
-    scheduleStickyRefresh();
+    startApplyingWidth();
+    if (sourceTable) {
+      refreshStickyHeaderTable(sourceTable, function() {
+        refreshStickyLeftColumns(sourceTable);
+        stopApplyingWidth(null);
+      });
+    } else {
+      scheduleStickyRefresh(function() {
+        stopApplyingWidth(null);
+      });
+    }
   }
 
   function stopHandleClick(event) {
