@@ -6,6 +6,7 @@
   var observedScrolls = new WeakMap();
   var observedFixedScrolls = new WeakMap();
   var scrollSyncStates = new WeakMap();
+  var suppressedResizeScrolls = new WeakMap();
 
   function directCells(row) {
     return Array.from(row.children).filter(function(cell) {
@@ -34,6 +35,11 @@
     }, 0));
 
     return preciseNumber(Math.max(table.scrollWidth || 0, measuredWidth(table), widthsSum));
+  }
+
+  function parsedPixelValue(value) {
+    var parsedValue = parseFloat(value || '0');
+    return Number.isNaN(parsedValue) ? 0 : preciseNumber(parsedValue);
   }
 
   function fixedColumnsCount(table) {
@@ -339,6 +345,19 @@
     });
   }
 
+  function applyColGroupColumnWidth(table, index, widthValue) {
+    if (!table) return;
+
+    var colgroup = table.querySelector('colgroup[data-fixed-header-colgroup]');
+    if (!colgroup) return;
+
+    while (colgroup.children.length <= index) {
+      colgroup.appendChild(document.createElement('col'));
+    }
+
+    colgroup.children[index].style.width = widthValue;
+  }
+
   function applyFixedHeaderCellWidths(fixedTable, widths) {
     var headerRow = fixedTable && fixedTable.querySelector('thead tr');
     if (!headerRow) return;
@@ -354,6 +373,56 @@
       cell.style.width = cssPixelValue(width);
       cell.style.minWidth = cssPixelValue(width);
     });
+  }
+
+  function applyFixedHeaderCellWidth(fixedTable, index, width) {
+    var headerRow = fixedTable && fixedTable.querySelector('thead tr');
+    if (!headerRow) return;
+
+    var cell = directCells(headerRow)[index];
+    if (!cell) return;
+
+    var widthValue = cssPixelValue(width);
+    cell.style.width = widthValue;
+    cell.style.minWidth = widthValue;
+  }
+
+  function columnIdentifier(cell) {
+    if (!cell) return '';
+
+    return cell.dataset.adminColumnResizerColumnId || cell.dataset.columnId || '';
+  }
+
+  function sourceColumnIndex(sourceTable, columnId) {
+    var sourceRow = sourceTable && sourceTable.querySelector('thead tr');
+    if (!sourceRow) return -1;
+
+    return directCells(sourceRow).findIndex(function(cell) {
+      return columnIdentifier(cell) === columnId;
+    });
+  }
+
+  function columnWidthsFromCurrentHeader(sourceTable, fixedTable, columnCount) {
+    var sourceRow = sourceTable && sourceTable.querySelector('thead tr');
+    var fixedRow = fixedTable && fixedTable.querySelector('thead tr');
+    var sourceCells = sourceRow ? directCells(sourceRow) : [];
+    var fixedCells = fixedRow ? directCells(fixedRow) : [];
+    var sourceColgroup = sourceTable && sourceTable.querySelector('colgroup[data-fixed-header-colgroup]');
+    var fixedColgroup = fixedTable && fixedTable.querySelector('colgroup[data-fixed-header-colgroup]');
+    var widths = [];
+
+    for (var index = 0; index < columnCount; index += 1) {
+      var fixedColWidth = fixedColgroup && fixedColgroup.children[index] && parsedPixelValue(fixedColgroup.children[index].style.width);
+      var sourceColWidth = sourceColgroup && sourceColgroup.children[index] && parsedPixelValue(sourceColgroup.children[index].style.width);
+
+      widths[index] = fixedColWidth ||
+        sourceColWidth ||
+        measuredWidth(fixedCells[index]) ||
+        measuredWidth(sourceCells[index]) ||
+        0;
+    }
+
+    return widths;
   }
 
   function mergeMeasuredCellWidths(widths, cells) {
@@ -467,6 +536,24 @@
     });
   }
 
+  function applySourceColumnMinWidth(sourceTable, columnIndex, columnCount, width) {
+    if (!sourceTable) return;
+
+    var widthValue = cssPixelValue(width);
+    Array.from(sourceTable.querySelectorAll('thead tr, tbody tr, tfoot tr')).forEach(function(row) {
+      var cells = directCells(row);
+      if (cells.length !== columnCount || cells.some(function(cell) { return cell.colSpan > 1; })) return;
+
+      var cell = cells[columnIndex];
+      if (!cell) return;
+
+      cell.style.setProperty('--fixed-header-column-min-width', widthValue);
+      applyManagedCellWidth(cell, 'width', widthValue);
+      applyManagedCellWidth(cell, 'min-width', widthValue);
+      cell.setAttribute('data-fixed-header-column-min-width', 'true');
+    });
+  }
+
   function clearFixedHeaderState(slot, scroll, sourceTable) {
     if (slot) {
       slot.hidden = true;
@@ -532,6 +619,63 @@
       }
       cell.style.left = cssPixelValue(offsets[index]);
     });
+  }
+
+  function suppressResizeBuild(scroll) {
+    if (!scroll) return;
+
+    var token = (suppressedResizeScrolls.get(scroll) || 0) + 1;
+    suppressedResizeScrolls.set(scroll, token);
+
+    window.setTimeout(function() {
+      if (suppressedResizeScrolls.get(scroll) === token) {
+        suppressedResizeScrolls.delete(scroll);
+      }
+    }, 250);
+  }
+
+  function resizeBuildSuppressed(scroll) {
+    return suppressedResizeScrolls.has(scroll);
+  }
+
+  function refreshColumnWidth(options) {
+    var settings = options || {};
+    var sourceTable = settings.sourceTable;
+    var columnId = settings.columnId;
+    var width = parseFloat(settings.width);
+
+    if (!sourceTable || !columnId || Number.isNaN(width)) return false;
+
+    var scroll = sourceTable.closest(WRAPPER_SELECTOR);
+    if (!scroll) return false;
+
+    var slot = ensureFixedHeaderSlot(scroll);
+    var fixedScroll = slot && slot.querySelector('.table-fixed-header__scroll');
+    var fixedTable = fixedScroll && fixedScroll.querySelector('.table-fixed-header__table');
+    if (!slot || !fixedScroll || !fixedTable) return false;
+
+    var sourceRow = sourceTable.querySelector('thead tr');
+    var columnCount = sourceRow ? directCells(sourceRow).length : 0;
+    var columnIndex = sourceColumnIndex(sourceTable, columnId);
+    if (columnIndex < 0 || columnCount === 0) return false;
+
+    suppressResizeBuild(scroll);
+
+    var widthValue = cssPixelValue(width);
+    var widths = columnWidthsFromCurrentHeader(sourceTable, fixedTable, columnCount);
+    widths[columnIndex] = preciseNumber(width);
+
+    applySourceColumnMinWidth(sourceTable, columnIndex, columnCount, width);
+    applyColGroupColumnWidth(sourceTable, columnIndex, widthValue);
+    applyColGroupColumnWidth(fixedTable, columnIndex, widthValue);
+    applyFixedHeaderCellWidth(fixedTable, columnIndex, width);
+    applyFixedHeaderStickyColumns(sourceTable, fixedTable, widths);
+
+    fixedTable.style.width = cssPixelValue(measuredTableWidth(sourceTable, widths));
+    syncStickyPageHeader(scroll, slot);
+    syncFixedHeaderScroll(scroll, fixedScroll);
+
+    return true;
   }
 
   function buildFixedTableHeader(slot, scroll, sourceTable) {
@@ -612,7 +756,11 @@
     var observer = resizeObservers.get(scroll);
     if (!observer) {
       observer = new ResizeObserver(function() {
+        if (resizeBuildSuppressed(scroll)) return;
+
         window.requestAnimationFrame(function() {
+          if (resizeBuildSuppressed(scroll)) return;
+
           initializeFixedHeaderForScroll(scroll);
         });
       });
@@ -720,6 +868,10 @@
 
   document.addEventListener('turbo:load', initializeFromDocument);
   window.addEventListener('resize', initializeFromDocument);
+
+  window.YummyGuideAdministrateStickyTableHeaders = {
+    refreshColumnWidth: refreshColumnWidth
+  };
 
   if (window.MutationObserver) {
     var mutationObserver = new MutationObserver(function(mutations) {

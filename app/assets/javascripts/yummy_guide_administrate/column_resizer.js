@@ -6,7 +6,6 @@
   var DRAGGING_BODY_CLASS = 'admin-column-resizer--dragging';
   var APPLYING_BODY_CLASS = 'admin-column-resizer--applying';
   var PREVIEW_CLASS = 'admin-column-resizer__preview';
-  var PREVIEW_LABEL_CLASS = 'admin-column-resizer__preview-label';
   var FIXED_HEADER_TABLE_CLASS = 'table-fixed-header__table';
   var ADJUSTED_COLUMNS_ATTRIBUTE = 'data-admin-column-resizer-adjusted-columns';
   var STORAGE_PREFIX = 'yummyGuideAdminColumnWidths:v1:';
@@ -489,13 +488,11 @@
     if (!preview) return;
 
     preview.element.style.width = cssPixelValue(width);
-    preview.label.textContent = Math.round(width) + 'px';
   }
 
   function createDragPreview(table, header, width) {
     var bounds = previewBoundsForTable(table, header);
     var element = document.createElement('div');
-    var label = document.createElement('span');
 
     element.className = PREVIEW_CLASS;
     element.setAttribute('aria-hidden', 'true');
@@ -503,13 +500,10 @@
     element.style.top = cssPixelValue(bounds.top);
     element.style.height = cssPixelValue(bounds.height);
 
-    label.className = PREVIEW_LABEL_CLASS;
-    element.appendChild(label);
     document.body.appendChild(element);
 
     var preview = {
-      element: element,
-      label: label
+      element: element
     };
     updateDragPreview(preview, width);
 
@@ -540,6 +534,40 @@
     updateDragPreview(dragState.preview, dragState.currentWidth || dragState.startWidth);
   }
 
+  function releaseDragPointerCapture() {
+    if (!dragState || !dragState.handle || dragState.pointerId === null || typeof dragState.pointerId === 'undefined') return;
+    if (!dragState.handle.releasePointerCapture) return;
+
+    try {
+      dragState.handle.releasePointerCapture(dragState.pointerId);
+    } catch (_error) {
+      // The pointer may already be released by the browser after cancellation.
+    }
+  }
+
+  function captureDragPointer(handle, event) {
+    if (!handle.setPointerCapture || event.pointerId === null || typeof event.pointerId === 'undefined') return;
+
+    try {
+      handle.setPointerCapture(event.pointerId);
+    } catch (_error) {
+      // Pointer capture is an enhancement for touch/pen dragging; document listeners remain as fallback.
+    }
+  }
+
+  function eventMatchesDragPointer(event) {
+    return !event ||
+      dragState.pointerId === null ||
+      typeof dragState.pointerId === 'undefined' ||
+      event.pointerId === dragState.pointerId;
+  }
+
+  function pointerCanStartDrag(event) {
+    if (event.isPrimary === false) return false;
+
+    return event.pointerType !== 'mouse' || event.button === 0;
+  }
+
   function scheduleDragWidth(width) {
     dragState.currentWidth = width;
     dragState.moved = dragState.moved || Math.abs(width - dragState.startWidth) > 2;
@@ -554,6 +582,33 @@
     });
   }
 
+  function refreshStickyHeaderColumn(pendingWidth, callback) {
+    var api = window.YummyGuideAdministrateStickyTableHeaders;
+
+    if (api && typeof api.refreshColumnWidth === 'function') {
+      var refreshed = api.refreshColumnWidth({
+        sourceTable: pendingWidth.sourceTable,
+        columnId: pendingWidth.columnId,
+        width: pendingWidth.width
+      });
+
+      if (refreshed) {
+        window.requestAnimationFrame(callback);
+        return;
+      }
+    }
+
+    scheduleStickyRefresh(callback);
+  }
+
+  function refreshStickyLeftColumns(sourceTable) {
+    var api = window.YummyGuideAdministrateStickyLeftColumns;
+
+    if (api && typeof api.refreshTable === 'function') {
+      api.refreshTable(sourceTable);
+    }
+  }
+
   function stopApplyingWidth(preview) {
     removePreview(preview);
     applyingWidth = false;
@@ -566,7 +621,8 @@
       applyColumnWidth(pendingWidth.columnId, pendingWidth.width, pendingWidth.storageKey);
       widths[pendingWidth.columnId] = preciseNumber(pendingWidth.width);
       safeWriteWidths(pendingWidth.storageKey, widths);
-      scheduleStickyRefresh(function() {
+      refreshStickyLeftColumns(pendingWidth.sourceTable);
+      refreshStickyHeaderColumn(pendingWidth, function() {
         stopApplyingWidth(pendingWidth.preview);
       });
     } catch (error) {
@@ -588,7 +644,7 @@
   }
 
   function startDrag(event) {
-    if (event.button !== 0) return;
+    if (!pointerCanStartDrag(event)) return;
     if (applyingWidth || widthApplyFrame) return;
 
     var handle = event.currentTarget;
@@ -617,10 +673,14 @@
       startX: event.clientX,
       startWidth: startWidth,
       currentWidth: startWidth,
+      pointerId: event.pointerId,
+      handle: handle,
+      sourceTable: sourceTable,
       moved: false,
       preview: createDragPreview(sourceTable, previewHeader, startWidth)
     };
 
+    captureDragPointer(handle, event);
     document.body.classList.add(DRAGGING_BODY_CLASS);
     document.addEventListener('pointermove', handleDragMove);
     document.addEventListener('pointerup', finishDrag);
@@ -629,6 +689,7 @@
 
   function handleDragMove(event) {
     if (!dragState) return;
+    if (!eventMatchesDragPointer(event)) return;
 
     event.preventDefault();
 
@@ -637,6 +698,7 @@
 
   function finishDrag(event) {
     if (!dragState) return;
+    if (!eventMatchesDragPointer(event)) return;
 
     if (event) {
       event.preventDefault();
@@ -647,10 +709,12 @@
     var pendingWidth = {
       columnId: dragState.columnId,
       storageKey: dragState.storageKey,
+      sourceTable: dragState.sourceTable,
       width: Math.max(MIN_WIDTH, dragState.currentWidth || dragState.startWidth),
       preview: dragState.preview
     };
 
+    releaseDragPointerCapture();
     dragState = null;
     document.body.classList.remove(DRAGGING_BODY_CLASS);
     document.removeEventListener('pointermove', handleDragMove);

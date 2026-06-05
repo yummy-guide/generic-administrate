@@ -13,7 +13,7 @@ table.admin-column-resizer__table:not(.table-fixed-header__table) {
   top: 0;
   right: -5px;
   bottom: 0;
-  z-index: 20;
+  z-index: 1;
   width: 12px;
   cursor: col-resize;
   touch-action: none;
@@ -67,21 +67,6 @@ table.admin-column-resizer__table:not(.table-fixed-header__table) {
   will-change: width;
 }
 
-.admin-column-resizer__preview-label {
-  position: absolute;
-  top: 8px;
-  right: 6px;
-  max-width: calc(100vw - 16px);
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(31, 41, 55, 0.92);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
 [data-fixed-table-header] .admin-column-resizer__handle {
   pointer-events: auto;
 }
@@ -92,24 +77,17 @@ table.admin-column-resizer__table:not(.table-fixed-header__table) {
 
 @media (pointer: coarse), screen and (max-width: 767px) {
   .admin-column-resizer__handle {
-    right: -10px;
-    width: 28px;
+    right: -14px;
+    width: 36px;
   }
 
   .admin-column-resizer__handle::after {
-    right: 13px;
+    right: 17px;
     background: rgba(255, 255, 255, 0.75);
     opacity: 1;
   }
 
   .admin-column-resizer__preview {
     border-right-width: 3px;
-  }
-
-  .admin-column-resizer__preview-label {
-    top: 10px;
-    right: 8px;
-    padding: 4px 8px;
-    font-size: 13px;
   }
 }
