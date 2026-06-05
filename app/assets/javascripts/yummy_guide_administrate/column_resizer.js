@@ -4,21 +4,25 @@
   var HEADER_CLASS = 'admin-column-resizer__header';
   var TABLE_CLASS = 'admin-column-resizer__table';
   var DRAGGING_BODY_CLASS = 'admin-column-resizer--dragging';
+  var APPLYING_BODY_CLASS = 'admin-column-resizer--applying';
+  var PREVIEW_CLASS = 'admin-column-resizer__preview';
+  var PREVIEW_LABEL_CLASS = 'admin-column-resizer__preview-label';
   var FIXED_HEADER_TABLE_CLASS = 'table-fixed-header__table';
+  var ADJUSTED_COLUMNS_ATTRIBUTE = 'data-admin-column-resizer-adjusted-columns';
   var STORAGE_PREFIX = 'yummyGuideAdminColumnWidths:v1:';
   var STYLE_ELEMENT_ID = 'admin-column-resizer-rules';
   var WIDTH_VAR_PREFIX = '--admin-column-resizer-col-';
   var MIN_WIDTH = 48;
-  var STICKY_REFRESH_INTERVAL = 120;
 
   var dragState = null;
-  var dragApplyFrame = null;
+  var dragPreviewFrame = null;
+  var widthApplyFrame = null;
   var generatedRuleCount = 0;
   var initializedHandles = new WeakSet();
   var tableStates = new WeakMap();
   var stickyRefreshFrame = null;
-  var stickyRefreshTimer = null;
-  var lastStickyRefreshAt = 0;
+  var stickyRefreshCallbacks = [];
+  var applyingWidth = false;
 
   function storageScopeForTable(table) {
     var sourceTable = matchingSourceTable(table);
@@ -72,6 +76,10 @@
 
     var rectWidth = element.getBoundingClientRect().width;
     return preciseNumber(rectWidth || element.offsetWidth || 0);
+  }
+
+  function viewportHeight() {
+    return window.innerHeight || document.documentElement.clientHeight || 0;
   }
 
   function normalizedIdentifier(value) {
@@ -169,13 +177,22 @@
   function columnRule(index) {
     var nthChild = index + 1;
     var variableName = columnWidthVariable(index);
-    var selector = [
-      '.' + TABLE_CLASS + ' > thead > tr > :nth-child(' + nthChild + ')',
-      '.' + TABLE_CLASS + ' > tbody > tr > :nth-child(' + nthChild + ')',
-      '.' + TABLE_CLASS + ' > tfoot > tr > :nth-child(' + nthChild + ')'
-    ].join(', ');
+    var adjustedTableSelector = '.' + TABLE_CLASS + '[' + ADJUSTED_COLUMNS_ATTRIBUTE + '~="' + nthChild + '"]';
+    var selectors = [
+      adjustedTableSelector + ' > thead > tr > :nth-child(' + nthChild + ')',
+      adjustedTableSelector + ' > tbody > tr > :nth-child(' + nthChild + ')',
+      adjustedTableSelector + ' > tfoot > tr > :nth-child(' + nthChild + ')'
+    ];
+    var selector = selectors.join(', ');
 
-    return selector + ' { box-sizing: border-box !important; width: var(' + variableName + ') !important; min-width: var(' + variableName + ') !important; max-width: var(' + variableName + ') !important; }';
+    var contentSelector = selectors.concat(selectors.map(function(cellSelector) {
+      return cellSelector + ' *';
+    })).join(', ');
+
+    return [
+      selector + ' { box-sizing: border-box !important; width: var(' + variableName + ') !important; min-width: var(' + variableName + ') !important; max-width: var(' + variableName + ') !important; }',
+      contentSelector + ' { white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; }'
+    ].join('\n');
   }
 
   function ensureStyleElement() {
@@ -315,6 +332,33 @@
     colgroup.children[index].style.width = widthValue;
   }
 
+  function adjustedColumnIndexes(table) {
+    return (table.getAttribute(ADJUSTED_COLUMNS_ATTRIBUTE) || '')
+      .split(/\s+/)
+      .filter(Boolean);
+  }
+
+  function setAdjustedColumn(table, index, adjusted) {
+    var indexToken = (index + 1).toString();
+    var indexes = adjustedColumnIndexes(table).filter(function(candidate, candidateIndex, candidates) {
+      return candidate !== indexToken && candidates.indexOf(candidate) === candidateIndex;
+    });
+
+    if (adjusted) {
+      indexes.push(indexToken);
+      indexes.sort(function(left, right) {
+        return parseInt(left, 10) - parseInt(right, 10);
+      });
+    }
+
+    if (indexes.length === 0) {
+      table.removeAttribute(ADJUSTED_COLUMNS_ATTRIBUTE);
+      return;
+    }
+
+    table.setAttribute(ADJUSTED_COLUMNS_ATTRIBUTE, indexes.join(' '));
+  }
+
   function clearColgroupWidth(table, columnCount, index) {
     var colgroup = ensureManagedColgroup(table, columnCount);
     if (!colgroup || !colgroup.children[index]) return;
@@ -329,6 +373,7 @@
 
     var widthValue = cssPixelValue(width);
     table.style.setProperty(columnWidthVariable(index), widthValue);
+    setAdjustedColumn(table, index, true);
     applyColgroupWidth(table, state.columnCount, index, widthValue);
   }
 
@@ -338,6 +383,7 @@
     if (!state || index === undefined) return;
 
     table.style.removeProperty(columnWidthVariable(index));
+    setAdjustedColumn(table, index, false);
     clearColgroupWidth(table, state.columnCount, index);
   }
 
@@ -381,26 +427,23 @@
 
   function dispatchStickyRefresh() {
     stickyRefreshFrame = null;
-    lastStickyRefreshAt = Date.now();
     window.dispatchEvent(new Event('resize'));
+
+    var callbacks = stickyRefreshCallbacks;
+    stickyRefreshCallbacks = [];
+    callbacks.forEach(function(callback) {
+      callback();
+    });
   }
 
-  function scheduleStickyRefresh(immediate) {
-    if (stickyRefreshFrame || stickyRefreshTimer) return;
+  function scheduleStickyRefresh(callback) {
+    if (callback) {
+      stickyRefreshCallbacks.push(callback);
+    }
 
-    var elapsed = Date.now() - lastStickyRefreshAt;
-    var delay = immediate ? 0 : Math.max(0, STICKY_REFRESH_INTERVAL - elapsed);
+    if (stickyRefreshFrame) return;
 
-    stickyRefreshTimer = window.setTimeout(function() {
-      stickyRefreshTimer = null;
-      stickyRefreshFrame = window.requestAnimationFrame(dispatchStickyRefresh);
-    }, delay);
-  }
-
-  function columnNeedsDragRefresh(header) {
-    return header.classList.contains('sticky') ||
-      header.classList.contains('sticky-left') ||
-      header.classList.contains('actions-column');
+    stickyRefreshFrame = window.requestAnimationFrame(dispatchStickyRefresh);
   }
 
   function sourceTableForHandle(handle) {
@@ -419,34 +462,134 @@
     }) || matchingSourceTable(table) || null;
   }
 
-  function flushDragWidth() {
-    if (!dragState) return;
+  function previewBoundsForTable(table, header) {
+    var headerRect = header.getBoundingClientRect();
+    var tableRect = table.getBoundingClientRect();
+    var scrollContainer = table.closest('.sticky-table-scroll, .scroll-table, .home-table__wrapper');
+    var scrollRect = scrollContainer ? scrollContainer.getBoundingClientRect() : tableRect;
+    var headerTable = header.closest(TABLE_SELECTOR);
+    var fromFixedHeader = headerTable && headerTable.classList.contains(FIXED_HEADER_TABLE_CLASS);
+    var viewportBottom = viewportHeight();
+    var top = fromFixedHeader ? headerRect.top : Math.max(tableRect.top, scrollRect.top);
+    var bottom = Math.min(viewportBottom, Math.max(tableRect.bottom, scrollRect.bottom, headerRect.bottom));
 
-    if (dragApplyFrame) {
-      window.cancelAnimationFrame(dragApplyFrame);
-      dragApplyFrame = null;
+    top = Math.max(0, Math.min(top, viewportBottom));
+    if (bottom <= top) {
+      bottom = Math.min(viewportBottom, top + Math.max(headerRect.height, 32));
     }
 
-    applyColumnWidth(dragState.columnId, dragState.currentWidth || dragState.startWidth, dragState.storageKey);
+    return {
+      left: headerRect.left,
+      top: top,
+      height: Math.max(32, bottom - top)
+    };
+  }
+
+  function updateDragPreview(preview, width) {
+    if (!preview) return;
+
+    preview.element.style.width = cssPixelValue(width);
+    preview.label.textContent = Math.round(width) + 'px';
+  }
+
+  function createDragPreview(table, header, width) {
+    var bounds = previewBoundsForTable(table, header);
+    var element = document.createElement('div');
+    var label = document.createElement('span');
+
+    element.className = PREVIEW_CLASS;
+    element.setAttribute('aria-hidden', 'true');
+    element.style.left = cssPixelValue(bounds.left);
+    element.style.top = cssPixelValue(bounds.top);
+    element.style.height = cssPixelValue(bounds.height);
+
+    label.className = PREVIEW_LABEL_CLASS;
+    element.appendChild(label);
+    document.body.appendChild(element);
+
+    var preview = {
+      element: element,
+      label: label
+    };
+    updateDragPreview(preview, width);
+
+    return preview;
+  }
+
+  function removePreview(preview) {
+    if (!preview) return;
+
+    preview.element.remove();
+  }
+
+  function removeDragPreview() {
+    if (!dragState || !dragState.preview) return;
+
+    removePreview(dragState.preview);
+    dragState.preview = null;
+  }
+
+  function flushDragPreview() {
+    if (!dragState) return;
+
+    if (dragPreviewFrame) {
+      window.cancelAnimationFrame(dragPreviewFrame);
+      dragPreviewFrame = null;
+    }
+
+    updateDragPreview(dragState.preview, dragState.currentWidth || dragState.startWidth);
   }
 
   function scheduleDragWidth(width) {
     dragState.currentWidth = width;
     dragState.moved = dragState.moved || Math.abs(width - dragState.startWidth) > 2;
 
-    if (dragApplyFrame) return;
+    if (dragPreviewFrame) return;
 
-    dragApplyFrame = window.requestAnimationFrame(function() {
-      dragApplyFrame = null;
+    dragPreviewFrame = window.requestAnimationFrame(function() {
+      dragPreviewFrame = null;
       if (!dragState) return;
 
-      applyColumnWidth(dragState.columnId, dragState.currentWidth, dragState.storageKey);
-      if (dragState.refreshDuringDrag) scheduleStickyRefresh(false);
+      updateDragPreview(dragState.preview, dragState.currentWidth);
+    });
+  }
+
+  function stopApplyingWidth(preview) {
+    removePreview(preview);
+    applyingWidth = false;
+    document.body.classList.remove(APPLYING_BODY_CLASS);
+  }
+
+  function applyPendingWidth(pendingWidth) {
+    try {
+      var widths = safeReadWidths(pendingWidth.storageKey);
+      applyColumnWidth(pendingWidth.columnId, pendingWidth.width, pendingWidth.storageKey);
+      widths[pendingWidth.columnId] = preciseNumber(pendingWidth.width);
+      safeWriteWidths(pendingWidth.storageKey, widths);
+      scheduleStickyRefresh(function() {
+        stopApplyingWidth(pendingWidth.preview);
+      });
+    } catch (error) {
+      stopApplyingWidth(pendingWidth.preview);
+      throw error;
+    }
+  }
+
+  function schedulePendingWidthApply(pendingWidth) {
+    applyingWidth = true;
+    document.body.classList.add(APPLYING_BODY_CLASS);
+
+    widthApplyFrame = window.requestAnimationFrame(function() {
+      widthApplyFrame = window.requestAnimationFrame(function() {
+        widthApplyFrame = null;
+        applyPendingWidth(pendingWidth);
+      });
     });
   }
 
   function startDrag(event) {
     if (event.button !== 0) return;
+    if (applyingWidth || widthApplyFrame) return;
 
     var handle = event.currentTarget;
     var header = handle.closest('th');
@@ -459,8 +602,11 @@
     if (!sourceTable) return;
 
     var sourceHeader = columnHeader(sourceTable, columnId) || header;
-    var startWidth = measuredWidth(sourceHeader) || measuredWidth(header);
+    var sourceHeaderWidth = measuredWidth(sourceHeader);
+    var handleHeaderWidth = measuredWidth(header);
+    var startWidth = sourceHeaderWidth || handleHeaderWidth;
     if (!startWidth) return;
+    var previewHeader = sourceHeaderWidth ? sourceHeader : header;
 
     event.preventDefault();
     event.stopPropagation();
@@ -472,7 +618,7 @@
       startWidth: startWidth,
       currentWidth: startWidth,
       moved: false,
-      refreshDuringDrag: columnNeedsDragRefresh(sourceHeader)
+      preview: createDragPreview(sourceTable, previewHeader, startWidth)
     };
 
     document.body.classList.add(DRAGGING_BODY_CLASS);
@@ -496,19 +642,21 @@
       event.preventDefault();
     }
 
-    flushDragWidth();
+    flushDragPreview();
 
-    var widths = safeReadWidths(dragState.storageKey);
-    var width = Math.max(MIN_WIDTH, dragState.currentWidth || dragState.startWidth);
-    widths[dragState.columnId] = preciseNumber(width);
-    safeWriteWidths(dragState.storageKey, widths);
+    var pendingWidth = {
+      columnId: dragState.columnId,
+      storageKey: dragState.storageKey,
+      width: Math.max(MIN_WIDTH, dragState.currentWidth || dragState.startWidth),
+      preview: dragState.preview
+    };
 
     dragState = null;
     document.body.classList.remove(DRAGGING_BODY_CLASS);
     document.removeEventListener('pointermove', handleDragMove);
     document.removeEventListener('pointerup', finishDrag);
     document.removeEventListener('pointercancel', finishDrag);
-    scheduleStickyRefresh(true);
+    schedulePendingWidthApply(pendingWidth);
   }
 
   function resetColumn(event) {
@@ -528,7 +676,7 @@
     delete widths[columnId];
     safeWriteWidths(key, widths);
     clearColumnWidth(columnId, key);
-    scheduleStickyRefresh(true);
+    scheduleStickyRefresh();
   }
 
   function stopHandleClick(event) {
