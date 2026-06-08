@@ -7,6 +7,7 @@ RSpec.describe YummyGuide::Administrate::FilterControlsHelper do
   subject(:helper_host) do
     Class.new do
       include ActionView::Context
+      include ActionView::Helpers::CaptureHelper
       include ActionView::Helpers::FormHelper
       include ActionView::Helpers::FormOptionsHelper
       include ActionView::Helpers::FormTagHelper
@@ -14,6 +15,10 @@ RSpec.describe YummyGuide::Administrate::FilterControlsHelper do
       include ActionView::Helpers::TagHelper
       include ActionView::Helpers::UrlHelper
       include YummyGuide::Administrate::FilterControlsHelper
+
+      def initialize
+        @view_flow = ActionView::OutputFlow.new
+      end
     end.new
   end
 
@@ -51,6 +56,34 @@ RSpec.describe YummyGuide::Administrate::FilterControlsHelper do
       expect(document.at_css("form.filter-form")["action"]).to eq("/admin/resources")
       expect(document.at_css('input[name="search_options[keyword]"]')["value"]).to eq("tokyo")
       expect(document.at_css('select[name="search_options[status]"] option[selected]')["value"]).to eq("closed")
+    end
+
+    # body mount指定時はフォームをcontent_forへ逃がし、ヘッダー側には起動ボタンだけを残すことを確認する
+    it "renders body-mounted modal markup into content_for" do
+      dashboard = Class.new
+      dashboard.const_set(
+        :FILTER_ATTRIBUTES,
+        {
+          keyword: YummyGuide::Administrate::Filters::Text.with_options(label: "Keyword")
+        }.freeze
+      )
+
+      html = helper_host.admin_filter_controls(
+        dashboard: dashboard,
+        path: "/admin/resources",
+        search_options: { keyword: "tokyo" },
+        modal_mount: :body
+      )
+      controls = fragment(html)
+      modals = fragment(helper_host.content_for(:admin_filter_modals))
+      modal_id = controls.at_css("#reserv-filter-options")["data-admin-filter-modal-id"]
+
+      expect(controls.at_css("#reserv-filter-options > a.button").text).to eq("Filter")
+      expect(controls.at_css("#reserv-filter-options > form")).to be_nil
+      expect(modal_id).to eq("admin-filter-modal-1")
+      expect(modals.at_css("##{modal_id}.admin-filter-modal-root > .modal_overlay")).to be_present
+      expect(modals.at_css("##{modal_id} > form.filter-form")["action"]).to eq("/admin/resources")
+      expect(modals.at_css('input[name="search_options[keyword]"]')["value"]).to eq("tokyo")
     end
 
     # boolean radio group が未指定・true・falseを横並びで描画し、ラベルと選択状態を反映することを確認する
