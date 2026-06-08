@@ -18,7 +18,9 @@ module YummyGuide
         button_label: "Filter",
         title: "Filter Options",
         submit_label: "Filter",
-        close_label: "Close"
+        close_label: "Close",
+        modal_mount: :inline,
+        modal_content_for: :admin_filter_modals
       )
         dashboard ||= admin_filter_dashboard_from_page(page)
         scope = form.to_s
@@ -47,28 +49,32 @@ module YummyGuide
           form_scope: scope
         )
 
+        form_markup = admin_filter_form(
+          fields: fields,
+          scope: scope,
+          path: path,
+          clear_path: clear_path,
+          method: method,
+          current_values: current_values,
+          hidden_fields: hidden_fields,
+          root_hidden_fields: root_hidden_fields,
+          locals: locals,
+          extra_actions: extra_actions,
+          title: title,
+          submit_label: submit_label,
+          close_label: close_label
+        )
+
+        if admin_filter_body_modal_mount?(modal_mount)
+          modal_id = admin_filter_next_modal_id
+          content_for(modal_content_for, admin_filter_modal_root(modal_id: modal_id, form_markup: form_markup))
+
+          return admin_filter_button_container(button_label: button_label, modal_id: modal_id)
+        end
+
         safe_join([
           content_tag(:div, "", class: "modal_overlay"),
-          content_tag(:div, id: "reserv-filter-options") do
-            safe_join([
-              link_to(button_label, "javascript:void(0)", class: "button"),
-              admin_filter_form(
-                fields: fields,
-                scope: scope,
-                path: path,
-                clear_path: clear_path,
-                method: method,
-                current_values: current_values,
-                hidden_fields: hidden_fields,
-                root_hidden_fields: root_hidden_fields,
-                locals: locals,
-                extra_actions: extra_actions,
-                title: title,
-                submit_label: submit_label,
-                close_label: close_label
-              )
-            ])
-          end
+          admin_filter_button_container(button_label: button_label, form_markup: form_markup)
         ])
       end
 
@@ -136,6 +142,37 @@ module YummyGuide
             end
           ])
         end
+      end
+
+      def admin_filter_button_container(button_label:, form_markup: nil, modal_id: nil)
+        data = { admin_filter_controls: true }
+        data[:admin_filter_modal_id] = modal_id if modal_id
+
+        content_tag(:div, id: "reserv-filter-options", data: data) do
+          safe_join([
+            link_to(button_label, "javascript:void(0)", class: "button"),
+            form_markup
+          ].compact)
+        end
+      end
+
+      def admin_filter_modal_root(modal_id:, form_markup:)
+        content_tag(:div, id: modal_id, class: "admin-filter-modal-root", data: { admin_filter_modal_root: true }) do
+          safe_join([
+            content_tag(:div, "", class: "modal_overlay"),
+            form_markup
+          ])
+        end
+      end
+
+      def admin_filter_body_modal_mount?(modal_mount)
+        modal_mount.to_s == "body"
+      end
+
+      def admin_filter_next_modal_id
+        @admin_filter_controls_modal_index ||= 0
+        @admin_filter_controls_modal_index += 1
+        "admin-filter-modal-#{@admin_filter_controls_modal_index}"
       end
 
       def admin_filter_form_header(title:, close_label:)
