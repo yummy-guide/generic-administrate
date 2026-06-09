@@ -15,6 +15,7 @@ module YummyGuide
           yummy_guide_administrate/filter_controls.js
           yummy_guide_administrate/filter_form.js
           yummy_guide_administrate/sticky_left_columns.js
+          yummy_guide_administrate/tooltips.js
           yummy_guide_administrate/resizable_navigation.js
           yummy_guide_administrate/sticky_table_headers.js
         ]
@@ -27,6 +28,7 @@ module YummyGuide
           ::Administrate::ApplicationController.helper YummyGuide::Administrate::NumberInputHelper
           ::Administrate::ApplicationController.helper YummyGuide::Administrate::FilterFormHelper
           ::Administrate::ApplicationController.helper YummyGuide::Administrate::FilterControlsHelper
+          ::Administrate::ApplicationController.helper YummyGuide::Administrate::TooltipHelper
         end
       end
     end

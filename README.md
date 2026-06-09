@@ -43,6 +43,8 @@ bundle install
   - datetime フィルターや checkbox group の組み立てを補助する helper
 - `YummyGuide::Administrate::FilterControlsHelper`
   - dashboard の Field 型フィルター定義から Filter ボタンとモーダルフォームを描画する helper
+- `YummyGuide::Administrate::TooltipHelper`
+  - 管理画面内で補足説明 tooltip を描画する helper
 - `YummyGuide::Administrate::DatetimeInputHelper`
   - 管理画面フォーム用の date + time 入力 helper
 - `YummyGuide::Administrate::NumberInputHelper`
@@ -58,6 +60,7 @@ bundle install
   - `filter_form.js`
   - `sticky_left_columns.js`
   - `sticky_table_headers.js`
+  - `tooltips.js`
   - `components.css`
 - 共通 field
   - `YummyGuide::Administrate::Fields::JsonPrettyField`
@@ -109,12 +112,15 @@ class Admin::ApplicationController < Administrate::ApplicationController
   helper YummyGuide::Administrate::FilterControlsHelper
   helper YummyGuide::Administrate::FilterFormHelper
   helper YummyGuide::Administrate::NumberInputHelper
+  helper YummyGuide::Administrate::TooltipHelper
 end
 ```
 
 `NumberInputHelper` は `Administrate::ApplicationController` の view helper として
 自動適用されます。`Administrate::ApplicationController` を継承しない独自 admin
 controller で同じ挙動が必要な場合だけ、上記のように明示的に読み込んでください。
+`TooltipHelper` も `Administrate::ApplicationController` の view helper として
+自動適用されます。
 
 ### Collection partial
 
@@ -461,6 +467,30 @@ Admin/Administrate 画面では、`number_field` / `number_field_tag` を
 `range_field` / `range_field_tag` は対象外で、従来どおり `type="range"` として描画
 されます。raw HTML の `<input type="number">` は helper を通らないため対象外です。
 
+### Tooltip helper
+
+ラベルやボタンの横に補足説明用の tooltip アイコンを表示する場合は、
+`admin_tooltip` を使います。PC では hover / focus 時に表示し、モバイルではタップで
+表示・非表示を切り替えます。
+
+```erb
+<%= f.label :published_at %>
+<%= admin_tooltip("公開日時を過ぎると公開ページに表示されます。") %>
+```
+
+説明本文に改行などの HTML を含める場合は block を渡します。`text` 引数と block を
+同時に指定した場合は block が優先されます。
+
+```erb
+<%= admin_tooltip do %>
+  Add - 調整レコードを追加表示するようにします。<br>
+  Only - 調整レコードのみを表示します。
+<% end %>
+```
+
+block を使わない場合、tooltip 本文はテキストとして扱われ、HTML は描画しません。
+見た目と表示制御には `components.css` と `tooltips.js` の読み込みが必要です。
+
 ### Asset の読み込み
 
 この engine の asset はホストアプリ側で明示的に読み込んでください。
@@ -473,6 +503,7 @@ Admin/Administrate 画面では、`number_field` / `number_field_tag` を
 //= require yummy_guide_administrate/filter_form
 //= require yummy_guide_administrate/sticky_left_columns
 //= require yummy_guide_administrate/sticky_table_headers
+//= require yummy_guide_administrate/tooltips
 ```
 
 ```scss
