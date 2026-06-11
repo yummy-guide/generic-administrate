@@ -54,6 +54,138 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
     end
   end
 
+  describe "#yummy_guide_administrate_collection_table_fixed_columns_count_for_names" do
+    # owner向け一覧のように表示列を手動で絞った場合も、実表示列数で固定列数が打ち止めになることを確認する
+    it "caps the fixed column count by the provided column names" do
+      dashboard_class = Class.new do
+        def self.index_fixed_columns_count
+          5
+        end
+      end
+
+      page = Object.new
+      page.instance_variable_set(:@dashboard, dashboard_class.new)
+
+      expect(
+        helper_host.yummy_guide_administrate_collection_table_fixed_columns_count_for_names(
+          page: page,
+          column_names: %i[month start_datetime]
+        )
+      ).to eq(2)
+    end
+  end
+
+  describe "#yummy_guide_administrate_collection_table_mobile_fixed_columns_count_for_names" do
+    # モバイル固定列数も手動指定した表示列数を超えないことを確認する
+    it "caps the mobile fixed column count by the provided column names" do
+      dashboard_class = Class.new do
+        def self.index_mobile_fixed_columns_count
+          4
+        end
+      end
+
+      page = Object.new
+      page.instance_variable_set(:@dashboard, dashboard_class.new)
+
+      expect(
+        helper_host.yummy_guide_administrate_collection_table_mobile_fixed_columns_count_for_names(
+          page: page,
+          column_names: %i[month start_datetime customer]
+        )
+      ).to eq(3)
+    end
+  end
+
+  describe "#yummy_guide_administrate_collection_sticky_columns" do
+    # 固定列のclassとCSS変数が表示列順から生成されることを確認する
+    it "builds sticky column classes and offsets from the rendered column order" do
+      dashboard_class = Class.new do
+        def self.index_fixed_columns_count
+          2
+        end
+
+        def self.index_mobile_fixed_columns_count
+          1
+        end
+
+        def self.index_fixed_column_widths
+          { customer: "14rem" }
+        end
+      end
+
+      page = Object.new
+      page.instance_variable_set(:@dashboard, dashboard_class.new)
+      collection_presenter = Struct.new(:attribute_types).new({ id: :integer, customer: :belongs_to, note: :text })
+
+      sticky_columns = helper_host.yummy_guide_administrate_collection_sticky_columns(
+        page: page,
+        collection_presenter: collection_presenter,
+        column_names: %i[id customer note]
+      )
+
+      expect(sticky_columns[:id]).to eq(
+        class: "sticky-left sticky-left-mobile sticky-left-mobile--last",
+        style: "--sticky-left: 0px; --sticky-width: 4rem; --sticky-mobile-left: 0px; --sticky-mobile-width: 4rem"
+      )
+      expect(sticky_columns[:customer]).to eq(
+        class: "sticky-left sticky-left--last",
+        style: "--sticky-left: 4rem; --sticky-width: 14rem"
+      )
+      expect(sticky_columns).not_to have_key(:note)
+    end
+
+    # owner向け一覧のように実際の描画列が変わっても、その列リストを基準に固定列を計算することを確認する
+    it "uses the provided column names instead of all dashboard attributes" do
+      dashboard_class = Class.new do
+        def self.index_fixed_columns_count
+          3
+        end
+
+        def self.index_mobile_fixed_columns_count
+          2
+        end
+      end
+
+      page = Object.new
+      page.instance_variable_set(:@dashboard, dashboard_class.new)
+      collection_presenter = Struct.new(:attribute_types).new({ id: :integer, customer: :belongs_to, note: :text })
+
+      sticky_columns = helper_host.yummy_guide_administrate_collection_sticky_columns(
+        page: page,
+        collection_presenter: collection_presenter,
+        column_names: %i[month start_datetime]
+      )
+
+      expect(sticky_columns.keys).to eq(%i[month start_datetime])
+      expect(sticky_columns[:start_datetime][:class]).to include("sticky-left--last")
+      expect(sticky_columns[:start_datetime][:class]).to include("sticky-left-mobile--last")
+    end
+  end
+
+  describe "#yummy_guide_administrate_collection_sticky_table_style" do
+    # nth-child fallback が参照するテーブル単位の固定列幅CSS変数を生成できることを確認する
+    it "builds table-level width variables for fixed column fallbacks" do
+      dashboard_class = Class.new do
+        def self.index_fixed_column_widths
+          { customer: "14rem" }
+        end
+      end
+
+      page = Object.new
+      page.instance_variable_set(:@dashboard, dashboard_class.new)
+
+      style = helper_host.yummy_guide_administrate_collection_sticky_table_style(
+        page: page,
+        column_names: %i[id customer note]
+      )
+
+      expect(style).to include("--admin-sticky-col-1-width: 4rem")
+      expect(style).to include("--admin-sticky-mobile-col-1-width: 4rem")
+      expect(style).to include("--admin-sticky-col-2-width: 14rem")
+      expect(style).to include("--admin-sticky-col-3-width: 8rem")
+    end
+  end
+
   describe "#yummy_guide_administrate_collection_column_id" do
     let(:collection_presenter) { Struct.new(:resource_name).new("external_reservation") }
 

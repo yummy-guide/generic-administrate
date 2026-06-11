@@ -9,12 +9,8 @@ RSpec.describe "column resizer assets" do
     File.read(File.expand_path("../../../app/assets/stylesheets/yummy_guide_administrate/_column_resizer.scss", __dir__))
   end
 
-  let(:sticky_table_headers_source) do
-    File.read(File.expand_path("../../../app/assets/javascripts/yummy_guide_administrate/sticky_table_headers.js", __dir__))
-  end
-
-  let(:sticky_left_columns_source) do
-    File.read(File.expand_path("../../../app/assets/javascripts/yummy_guide_administrate/sticky_left_columns.js", __dir__))
+  let(:components_source) do
+    File.read(File.expand_path("../../../app/assets/stylesheets/yummy_guide_administrate/components.scss", __dir__))
   end
 
   # 未調整列は内容幅で表示され、調整済み列だけが幅固定されることを静的に確認する
@@ -116,68 +112,41 @@ RSpec.describe "column resizer assets" do
     expect(stylesheet_source).to include("width: 36px")
   end
 
-  # 幅適用後の固定ヘッダー追従が全体rebuildではなく対象カラム同期を優先することを静的に確認する
-  it "uses targeted fixed header synchronization after applying a width" do
-    expect(javascript_source).to include("window.YummyGuideAdministrateStickyTableHeaders")
-    expect(javascript_source).to include("api.refreshColumnWidth({")
-    expect(sticky_table_headers_source).to include("window.YummyGuideAdministrateStickyTableHeaders = {")
-    expect(sticky_table_headers_source).to include("refreshColumnWidth: refreshColumnWidth")
-    expect(sticky_table_headers_source).to include("refreshTable: refreshTable")
-    expect(sticky_table_headers_source).to include("function refreshColumnWidth(options)")
-    expect(sticky_table_headers_source).to include("applySourceColumnMinWidth(sourceTable, columnIndex, columnCount, width)")
-    expect(sticky_table_headers_source).to include("applyFixedHeaderCellWidth(fixedTable, columnIndex, width)")
-    expect(sticky_table_headers_source).to include("suppressResizeBuild(scroll)")
+  # CSSだけで固定ヘッダーと固定左列の初期表示に必要なスタイルがあることを静的に確認する
+  it "defines CSS-only sticky table styles" do
+    expect(components_source).to include("[data-css-sticky-table]")
+    expect(components_source).to include("max-height: var(--admin-sticky-table-max-height")
+    expect(components_source).to include("top: 0")
+    expect(components_source).to include("--sticky-col-1-width")
+    expect(components_source).to include("left: var(--sticky-left, 0)")
+    expect(components_source).to include("left: var(--sticky-mobile-left, 0)")
+    expect(components_source).to include(":not(.sticky-left)")
+    expect(components_source).to include(":not(.sticky-left-mobile)")
+    expect(components_source).to include("th.sticky.actions-column")
+    expect(components_source).to include("td.sticky.actions-column")
+    expect(components_source).to include("z-index: 6")
   end
 
-  # 幅適用後の固定左列追従もResizeObserverの重複再計算に頼らないことを静的に確認する
-  it "refreshes sticky left columns directly after applying a width" do
-    expect(javascript_source).to include("window.YummyGuideAdministrateStickyLeftColumns")
-    expect(javascript_source).to include("api.refreshColumnWidth({")
-    expect(javascript_source).to include("sourceTable: pendingWidth.sourceTable")
-    expect(javascript_source).to include("columnId: pendingWidth.columnId")
-    expect(javascript_source).to include("width: pendingWidth.width")
-    expect(javascript_source).to include("api.refreshTable(sourceTable)")
-    expect(javascript_source).to include("refreshStickyLeftColumns(pendingWidth.sourceTable)")
-    expect(sticky_left_columns_source).to include("window.YummyGuideAdministrateStickyLeftColumns = {")
-    expect(sticky_left_columns_source).to include("refreshColumnWidth: refreshColumnWidth")
-    expect(sticky_left_columns_source).to include("refreshTable: refreshTable")
-    expect(sticky_left_columns_source).to include("function refreshTable(table)")
-    expect(sticky_left_columns_source).to include("function refreshColumnWidth(options)")
-    expect(sticky_left_columns_source).to include("suppressResizeApply(table)")
+  # 固定列リサイズ後にCSS変数のleftと幅を再計算する処理があることを静的に確認する
+  it "recalculates CSS sticky-left offsets after applying column widths" do
+    expect(javascript_source).to include("function refreshCssStickyLeftColumns(table)")
+    expect(javascript_source).to include("refreshCssStickyLeftColumnSet(table, 'sticky-left', '--sticky-left', '--sticky-width')")
+    expect(javascript_source).to include("refreshCssStickyLeftColumnSet(table, 'sticky-left-mobile', '--sticky-mobile-left', '--sticky-mobile-width')")
+    expect(javascript_source).to include("cell.style.setProperty(leftVariable, cssPixelValue(left))")
+    expect(javascript_source).to include("refreshCssStickyLeftColumns(table)")
   end
 
-  # 固定5列の4列目を調整した直後に5列目のleftが古い幅で残らないことを静的に確認する
-  it "uses the resized fixed column width when recalculating sticky-left offsets" do
-    expect(sticky_left_columns_source).to include("function widthOverride(headerCells, options)")
-    expect(sticky_left_columns_source).to include("columnIndex(headerCells, settings.columnId)")
-    expect(sticky_left_columns_source).to include("width: preciseNumber(width)")
-    expect(sticky_left_columns_source).to include("var hasMeasuredWidth = widths.some(Boolean)")
-    expect(sticky_left_columns_source).to include("applyWidthOverride(widths, override)")
-    expect(sticky_left_columns_source).to include("var offsets = stickyOffsets(table, count, options)")
-  end
-
-  # 幅リセット時は明示幅がないため、クリア後に通常の固定左列再計算へ戻すことを静的に確認する
-  it "recalculates sticky-left offsets after clearing a column width" do
-    expect(javascript_source).to include("clearColumnWidth(columnId, key)")
-    expect(javascript_source).to include("refreshStickyHeaderTable(sourceTable, function()")
-    expect(javascript_source).to include("refreshStickyLeftColumns(sourceTable)")
-  end
-
-  # ダブルクリックで幅リセットした時も、固定列同期が完了するまで待機カーソルを表示することを静的に確認する
-  it "shows a wait cursor while resetting a column width" do
-    expect(javascript_source).to include("clearColumnWidth(columnId, key)")
-    expect(javascript_source).to include("startApplyingWidth()")
-    expect(javascript_source).to include("stopApplyingWidth(null)")
-    expect(javascript_source).to include("scheduleStickyRefresh(function()")
-  end
-
-  # 幅リセット時は固定ヘッダーの管理幅を先に作り直してから固定左列を再計算することを静的に確認する
-  it "rebuilds fixed headers before refreshing sticky-left columns after clearing a width" do
-    expect(javascript_source).to include("function refreshStickyHeaderTable(sourceTable, callback)")
-    expect(javascript_source).to include("api.refreshTable(sourceTable, callback)")
+  # 固定ヘッダー複製APIがなくても幅適用後の完了処理に進めることを静的に確認する
+  it "keeps a resize fallback when fixed header JavaScript is absent" do
+    expect(javascript_source).to include("var api = window.YummyGuideAdministrateStickyTableHeaders")
+    expect(javascript_source).to include("if (api && typeof api.refreshColumnWidth === 'function')")
     expect(javascript_source).to include("scheduleStickyRefresh(callback)")
-    expect(sticky_table_headers_source).to include("function refreshTable(sourceTable, callback)")
-    expect(sticky_table_headers_source).to include("initializeFixedHeaderForScroll(scroll)")
-    expect(sticky_table_headers_source).to include("window.requestAnimationFrame(callback)")
+  end
+
+  # 幅リセット時も固定列のCSS変数を再計算することを静的に確認する
+  it "recalculates CSS sticky-left offsets after clearing a column width" do
+    expect(javascript_source).to include("clearColumnWidth(columnId, key)")
+    expect(javascript_source).to include("clearTableColumnWidth(table, columnId)")
+    expect(javascript_source).to include("refreshCssStickyLeftColumns(table)")
   end
 end

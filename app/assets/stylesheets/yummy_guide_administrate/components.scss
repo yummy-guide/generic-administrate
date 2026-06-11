@@ -88,6 +88,99 @@
   overflow-x: auto;
 }
 
+.scroll-table[data-css-sticky-table],
+.home-table__wrapper[data-css-sticky-table] {
+  max-width: 100%;
+  max-height: var(--admin-sticky-table-max-height, calc(100dvh - 10rem));
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.scroll-table[data-css-sticky-table] table[data-fixed-columns-count],
+.home-table__wrapper[data-css-sticky-table] table[data-fixed-columns-count] {
+  width: max-content;
+  min-width: 100%;
+}
+
+.scroll-table table[data-fixed-columns-count],
+.sticky-table-scroll table[data-fixed-columns-count],
+.home-table__wrapper table[data-fixed-columns-count],
+.table-wrap table[data-fixed-columns-count],
+.af__table__content table[data-fixed-columns-count] {
+  --sticky-col-1-width: var(--admin-sticky-col-1-width, 4rem);
+  --sticky-col-2-width: var(--admin-sticky-col-2-width, 8rem);
+  --sticky-col-3-width: var(--admin-sticky-col-3-width, 8rem);
+  --sticky-col-4-width: var(--admin-sticky-col-4-width, 8rem);
+  --sticky-col-5-width: var(--admin-sticky-col-5-width, 8rem);
+  --sticky-col-6-width: var(--admin-sticky-col-6-width, 8rem);
+  --sticky-col-1-left: 0px;
+  --sticky-col-2-left: var(--sticky-col-1-width);
+  --sticky-col-3-left: calc(var(--sticky-col-1-width) + var(--sticky-col-2-width));
+  --sticky-col-4-left: calc(var(--sticky-col-1-width) + var(--sticky-col-2-width) + var(--sticky-col-3-width));
+  --sticky-col-5-left: calc(var(--sticky-col-1-width) + var(--sticky-col-2-width) + var(--sticky-col-3-width) + var(--sticky-col-4-width));
+  --sticky-col-6-left: calc(var(--sticky-col-1-width) + var(--sticky-col-2-width) + var(--sticky-col-3-width) + var(--sticky-col-4-width) + var(--sticky-col-5-width));
+  --sticky-mobile-col-1-width: var(--admin-sticky-mobile-col-1-width, var(--sticky-col-1-width));
+  --sticky-mobile-col-2-width: var(--admin-sticky-mobile-col-2-width, var(--sticky-col-2-width));
+  --sticky-mobile-col-3-width: var(--admin-sticky-mobile-col-3-width, var(--sticky-col-3-width));
+  --sticky-mobile-col-4-width: var(--admin-sticky-mobile-col-4-width, var(--sticky-col-4-width));
+  --sticky-mobile-col-5-width: var(--admin-sticky-mobile-col-5-width, var(--sticky-col-5-width));
+  --sticky-mobile-col-6-width: var(--admin-sticky-mobile-col-6-width, var(--sticky-col-6-width));
+  --sticky-mobile-col-1-left: 0px;
+  --sticky-mobile-col-2-left: var(--sticky-mobile-col-1-width);
+  --sticky-mobile-col-3-left: calc(var(--sticky-mobile-col-1-width) + var(--sticky-mobile-col-2-width));
+  --sticky-mobile-col-4-left: calc(var(--sticky-mobile-col-1-width) + var(--sticky-mobile-col-2-width) + var(--sticky-mobile-col-3-width));
+  --sticky-mobile-col-5-left: calc(var(--sticky-mobile-col-1-width) + var(--sticky-mobile-col-2-width) + var(--sticky-mobile-col-3-width) + var(--sticky-mobile-col-4-width));
+  --sticky-mobile-col-6-left: calc(var(--sticky-mobile-col-1-width) + var(--sticky-mobile-col-2-width) + var(--sticky-mobile-col-3-width) + var(--sticky-mobile-col-4-width) + var(--sticky-mobile-col-5-width));
+}
+
+@for $count from 1 through 6 {
+  @for $index from 1 through $count {
+    .scroll-table table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+    .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+    .home-table__wrapper table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+    .table-wrap table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+    .af__table__content table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left) {
+      position: sticky;
+      left: var(--sticky-col-#{$index}-left);
+      box-sizing: border-box;
+      width: var(--sticky-col-#{$index}-width);
+      min-width: var(--sticky-col-#{$index}-width);
+      max-width: var(--sticky-col-#{$index}-width);
+      background-clip: padding-box;
+    }
+
+    .scroll-table table[data-fixed-columns-count="#{$count}"] th:nth-child(#{$index}),
+    .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] th:nth-child(#{$index}),
+    .home-table__wrapper table[data-fixed-columns-count="#{$count}"] th:nth-child(#{$index}),
+    .table-wrap table[data-fixed-columns-count="#{$count}"] th:nth-child(#{$index}),
+    .af__table__content table[data-fixed-columns-count="#{$count}"] th:nth-child(#{$index}) {
+      z-index: 4;
+      background-color: #121012;
+    }
+
+    .scroll-table table[data-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
+    .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
+    .home-table__wrapper table[data-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
+    .table-wrap table[data-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
+    .af__table__content table[data-fixed-columns-count="#{$count}"] td:nth-child(#{$index}) {
+      z-index: 3;
+      background-color: var(--sticky-cell-background, #fff);
+    }
+  }
+}
+
+.scroll-table table[data-fixed-columns-count] th,
+.sticky-table-scroll table[data-fixed-columns-count] th,
+.home-table__wrapper table[data-fixed-columns-count] th,
+.table-wrap table[data-fixed-columns-count] th,
+.af__table__content table[data-fixed-columns-count] th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-clip: padding-box;
+}
+
 .table-fixed-header-slot {
   overflow-y: hidden;
 }
@@ -265,6 +358,11 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
 .home-table th.sticky-left,
 .home-table td.sticky-left {
   position: sticky;
+  left: var(--sticky-left, 0);
+  box-sizing: border-box;
+  width: var(--sticky-width, auto);
+  min-width: var(--sticky-width, auto);
+  max-width: var(--sticky-width, none);
   background-clip: padding-box;
 }
 
@@ -307,6 +405,139 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
   box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.35);
 }
 
+@media (max-width: 767px) {
+  @for $count from 1 through 6 {
+    @for $index from 1 through $count {
+      .scroll-table table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}),
+      .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}),
+      .home-table__wrapper table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}),
+      .table-wrap table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}),
+      .af__table__content table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}) {
+        position: static;
+        left: auto;
+        width: auto;
+        min-width: 0;
+        max-width: none;
+        box-shadow: none;
+      }
+    }
+  }
+
+  @for $count from 1 through 6 {
+    @for $index from 1 through $count {
+      .scroll-table table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile),
+      .sticky-table-scroll table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile),
+      .home-table__wrapper table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile),
+      .table-wrap table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile),
+      .af__table__content table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile) {
+        position: sticky;
+        left: var(--sticky-mobile-col-#{$index}-left);
+        box-sizing: border-box;
+        width: var(--sticky-mobile-col-#{$index}-width);
+        min-width: var(--sticky-mobile-col-#{$index}-width);
+        max-width: var(--sticky-mobile-col-#{$index}-width);
+        background-clip: padding-box;
+      }
+
+      .scroll-table table[data-mobile-fixed-columns-count="#{$count}"] th:nth-child(#{$index}),
+      .sticky-table-scroll table[data-mobile-fixed-columns-count="#{$count}"] th:nth-child(#{$index}),
+      .home-table__wrapper table[data-mobile-fixed-columns-count="#{$count}"] th:nth-child(#{$index}),
+      .table-wrap table[data-mobile-fixed-columns-count="#{$count}"] th:nth-child(#{$index}),
+      .af__table__content table[data-mobile-fixed-columns-count="#{$count}"] th:nth-child(#{$index}) {
+        z-index: 4;
+        background-color: #121012;
+      }
+
+      .scroll-table table[data-mobile-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
+      .sticky-table-scroll table[data-mobile-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
+      .home-table__wrapper table[data-mobile-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
+      .table-wrap table[data-mobile-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
+      .af__table__content table[data-mobile-fixed-columns-count="#{$count}"] td:nth-child(#{$index}) {
+        z-index: 3;
+        background-color: var(--sticky-cell-background, #fff);
+      }
+    }
+  }
+
+  .scroll-table table th.sticky-left,
+  .scroll-table table td.sticky-left,
+  .sticky-table-scroll table th.sticky-left,
+  .sticky-table-scroll table td.sticky-left,
+  .home-table th.sticky-left,
+  .home-table td.sticky-left {
+    position: static;
+    left: auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    box-shadow: none;
+  }
+
+  .scroll-table table th.sticky-left::after,
+  .scroll-table table td.sticky-left::after,
+  .sticky-table-scroll table th.sticky-left::after,
+  .sticky-table-scroll table td.sticky-left::after,
+  .home-table th.sticky-left::after,
+  .home-table td.sticky-left::after {
+    content: none;
+    display: none;
+  }
+
+  .scroll-table table th.sticky-left-mobile,
+  .scroll-table table td.sticky-left-mobile,
+  .sticky-table-scroll table th.sticky-left-mobile,
+  .sticky-table-scroll table td.sticky-left-mobile,
+  .home-table th.sticky-left-mobile,
+  .home-table td.sticky-left-mobile {
+    position: sticky;
+    left: var(--sticky-mobile-left, 0);
+    box-sizing: border-box;
+    width: var(--sticky-mobile-width, auto);
+    min-width: var(--sticky-mobile-width, auto);
+    max-width: var(--sticky-mobile-width, none);
+    background-clip: padding-box;
+  }
+
+  .scroll-table table th.sticky-left-mobile,
+  .sticky-table-scroll table th.sticky-left-mobile,
+  .home-table th.sticky-left-mobile {
+    z-index: 4;
+    background-color: #121012;
+  }
+
+  .scroll-table table td.sticky-left-mobile,
+  .sticky-table-scroll table td.sticky-left-mobile,
+  .home-table td.sticky-left-mobile {
+    z-index: 3;
+    background-color: var(--sticky-cell-background, #fff);
+  }
+
+  .scroll-table table th.sticky-left-mobile::after,
+  .scroll-table table td.sticky-left-mobile::after,
+  .sticky-table-scroll table th.sticky-left-mobile::after,
+  .sticky-table-scroll table td.sticky-left-mobile::after,
+  .home-table th.sticky-left-mobile::after,
+  .home-table td.sticky-left-mobile::after {
+    content: "";
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    bottom: -1px;
+    width: 1px;
+    background-color: #fff;
+    pointer-events: none;
+  }
+
+  .scroll-table table th.sticky-left-mobile--last,
+  .scroll-table table td.sticky-left-mobile--last,
+  .sticky-table-scroll table th.sticky-left-mobile--last,
+  .sticky-table-scroll table td.sticky-left-mobile--last,
+  .home-table th.sticky-left-mobile--last,
+  .home-table td.sticky-left-mobile--last {
+    box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.35);
+  }
+}
+
 .scroll-table table th.sticky,
 .scroll-table table td.sticky,
 .sticky-table-scroll table th.sticky,
@@ -340,6 +571,23 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
 .sticky-table-scroll table th.sticky,
 .home-table th.sticky {
   z-index: 5;
+}
+
+.scroll-table[data-css-sticky-table] table th.sticky.actions-column,
+.home-table__wrapper[data-css-sticky-table] table th.sticky.actions-column {
+  position: sticky;
+  top: 0;
+  right: 0;
+  z-index: 6;
+  background-color: #121012;
+}
+
+.scroll-table[data-css-sticky-table] table td.sticky.actions-column,
+.home-table__wrapper[data-css-sticky-table] table td.sticky.actions-column {
+  position: sticky;
+  right: 0;
+  z-index: 4;
+  background-color: var(--sticky-cell-background, #fff);
 }
 
 .scroll-table table td.sticky,

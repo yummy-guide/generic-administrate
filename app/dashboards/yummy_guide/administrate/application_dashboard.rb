@@ -6,6 +6,7 @@ module YummyGuide
   module Administrate
     class ApplicationDashboard < ::Administrate::BaseDashboard
       INDEX_FIXED_COLUMNS_COUNT = 1
+      INDEX_FIXED_COLUMN_WIDTHS = {}.freeze
 
       def default_sorting_attribute
         :created_at
@@ -34,6 +35,16 @@ module YummyGuide
           superclass.index_mobile_fixed_columns_count
         else
           [index_fixed_columns_count.to_i, 1].min
+        end
+      end
+
+      def self.index_fixed_column_widths
+        if const_defined?(:INDEX_FIXED_COLUMN_WIDTHS, false)
+          const_get(:INDEX_FIXED_COLUMN_WIDTHS)
+        elsif superclass.respond_to?(:index_fixed_column_widths)
+          superclass.index_fixed_column_widths
+        else
+          {}
         end
       end
 
