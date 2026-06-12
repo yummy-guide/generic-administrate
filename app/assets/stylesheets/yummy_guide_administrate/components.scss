@@ -558,6 +558,71 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
   .home-table td.sticky-left-mobile--last {
     box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.35);
   }
+
+  .scroll-table[data-css-sticky-table] table[data-fixed-columns-count] > thead th,
+  .sticky-table-scroll[data-css-sticky-table] table[data-fixed-columns-count] > thead th,
+  .home-table__wrapper[data-css-sticky-table] table[data-fixed-columns-count] > thead th,
+  .table-wrap[data-css-sticky-table] table[data-fixed-columns-count] > thead th,
+  .af__table__content[data-css-sticky-table] table[data-fixed-columns-count] > thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #121012;
+    color: #fff;
+    background-clip: padding-box;
+  }
+
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile {
+    position: sticky;
+    left: var(--sticky-mobile-left, 0);
+    box-sizing: border-box;
+    width: var(--sticky-mobile-width, auto);
+    min-width: var(--sticky-mobile-width, auto);
+    max-width: var(--sticky-mobile-width, none);
+    background-clip: padding-box;
+  }
+
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile {
+    top: 0;
+    z-index: 4;
+    background-color: #121012;
+    color: #fff;
+  }
+
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile {
+    z-index: 3;
+    background-color: var(--sticky-cell-background, #fff);
+  }
+
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile--last,
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile--last,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile--last,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile--last,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile--last,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile--last,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile--last,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile--last,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile--last,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile--last {
+    box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.35);
+  }
 }
 
 .scroll-table table th.sticky,
