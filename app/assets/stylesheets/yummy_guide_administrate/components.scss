@@ -430,11 +430,11 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
 @media (max-width: 767px) {
   @for $count from 1 through 6 {
     @for $index from 1 through $count {
-      .scroll-table table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}),
-      .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}),
-      .home-table__wrapper table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}),
-      .table-wrap table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}),
-      .af__table__content table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}) {
+      .scroll-table table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+      .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+      .home-table__wrapper table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+      .table-wrap table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+      .af__table__content table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left) {
         position: static;
         left: auto;
         width: auto;
