@@ -191,15 +191,15 @@
   body.admin-body > main.main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table]) > .main-content__header {
     background: #fff;
     box-sizing: border-box;
-    inline-size: auto;
-    left: 0;
-    max-inline-size: 100vw;
+    inline-size: 100vw !important;
+    left: 0 !important;
+    max-inline-size: 100vw !important;
     min-height: var(--admin-sticky-page-header-height);
     overflow-x: hidden;
-    position: fixed;
-    right: 0;
-    top: var(--admin-sticky-page-header-top);
-    width: auto;
+    position: fixed !important;
+    right: auto !important;
+    top: var(--admin-sticky-page-header-top) !important;
+    width: 100vw !important;
     z-index: var(--admin-sticky-page-header-z-index, 10);
     box-shadow: 0 calc(0px - var(--admin-sticky-page-header-top, 0px)) 0 var(--admin-sticky-page-header-top, 0px) var(--admin-page-background, #f6f7f7);
   }
@@ -730,6 +730,46 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
     background-clip: padding-box;
   }
 
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] > thead th.sticky-left:not(.sticky-left-mobile),
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] > thead th.sticky-left:not(.sticky-left-mobile),
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] > thead th.sticky-left:not(.sticky-left-mobile),
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] > thead th.sticky-left:not(.sticky-left-mobile),
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] > thead th.sticky-left:not(.sticky-left-mobile) {
+    position: sticky !important;
+    left: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    box-shadow: none !important;
+  }
+
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left:not(.sticky-left-mobile),
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left:not(.sticky-left-mobile),
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left:not(.sticky-left-mobile),
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left:not(.sticky-left-mobile),
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left:not(.sticky-left-mobile) {
+    position: static !important;
+    left: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    box-shadow: none !important;
+  }
+
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left:not(.sticky-left-mobile)::after,
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left:not(.sticky-left-mobile)::after,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left:not(.sticky-left-mobile)::after,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left:not(.sticky-left-mobile)::after,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left:not(.sticky-left-mobile)::after,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left:not(.sticky-left-mobile)::after,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left:not(.sticky-left-mobile)::after,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left:not(.sticky-left-mobile)::after,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left:not(.sticky-left-mobile)::after,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left:not(.sticky-left-mobile)::after {
+    content: none;
+    display: none;
+  }
+
   .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
   .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
   .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
@@ -759,6 +799,7 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
   .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count="1"] td.sticky-left-mobile,
   .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count="1"] th.sticky-left-mobile,
   .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count="1"] td.sticky-left-mobile {
+    position: sticky !important;
     left: 0 !important;
   }
 
@@ -1157,5 +1198,20 @@ td.actions-column .sticky__item,
   .app-container > .main-content:has(> .main-content__body--flush [data-css-sticky-table]),
   .app-container > .main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table]) {
     flex-basis: max-content !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .scroll-table[data-css-sticky-table],
+  .sticky-table-scroll[data-css-sticky-table],
+  .home-table__wrapper[data-css-sticky-table],
+  .table-wrap[data-css-sticky-table],
+  .af__table__content[data-css-sticky-table] {
+    inline-size: max-content !important;
+    max-inline-size: none !important;
+    max-width: none !important;
+    min-inline-size: 100vw !important;
+    min-width: 100vw !important;
+    width: max-content !important;
   }
 }
