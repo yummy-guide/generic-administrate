@@ -71,6 +71,11 @@
     return preciseNumber(value) + 'px';
   }
 
+  function parsedPixelValue(value) {
+    var parsedValue = parseFloat(value || '0');
+    return Number.isNaN(parsedValue) ? 0 : preciseNumber(parsedValue);
+  }
+
   function measuredWidth(element) {
     if (!element) return 0;
 
@@ -307,6 +312,7 @@
       indexByColumnId: indexByColumnId
     };
     tableStates.set(table, state);
+    refreshCssStickyLeftColumns(table);
 
     return state;
   }
@@ -375,6 +381,7 @@
     table.style.setProperty(columnWidthVariable(index), widthValue);
     setAdjustedColumn(table, index, true);
     applyColgroupWidth(table, state.columnCount, index, widthValue);
+    refreshCssStickyLeftColumns(table);
   }
 
   function clearTableColumnWidth(table, columnId) {
@@ -385,6 +392,65 @@
     table.style.removeProperty(columnWidthVariable(index));
     setAdjustedColumn(table, index, false);
     clearColgroupWidth(table, state.columnCount, index);
+    refreshCssStickyLeftColumns(table);
+  }
+
+  function stickyColumnIndexes(table, className) {
+    var row = table && table.querySelector('thead tr');
+    if (!row) return [];
+
+    return directCells(row).map(function(cell, index) {
+      return cell.classList && cell.classList.contains(className) ? index : null;
+    }).filter(function(index) {
+      return index !== null;
+    });
+  }
+
+  function managedColumnWidth(table, index) {
+    var colgroup = table && table.querySelector('colgroup[data-admin-column-resizer-colgroup], colgroup[data-fixed-header-colgroup]');
+    var col = colgroup && colgroup.children[index];
+
+    return col ? parsedPixelValue(col.style.width) : 0;
+  }
+
+  function stickyColumnWidth(table, header, index, widthVariable) {
+    return measuredWidth(header) ||
+      managedColumnWidth(table, index) ||
+      parsedPixelValue(header && header.style && header.style.getPropertyValue(widthVariable));
+  }
+
+  function applyStickyColumnPosition(table, index, leftVariable, left, widthVariable, width) {
+    Array.from(table.querySelectorAll('thead tr, tbody tr, tfoot tr')).forEach(function(row) {
+      var cell = directCells(row)[index];
+      if (!cell) return;
+
+      cell.style.setProperty(leftVariable, cssPixelValue(left));
+      if (width) {
+        cell.style.setProperty(widthVariable, cssPixelValue(width));
+      }
+    });
+  }
+
+  function refreshCssStickyLeftColumnSet(table, className, leftVariable, widthVariable) {
+    var headerRow = table && table.querySelector('thead tr');
+    if (!headerRow) return;
+
+    var headerCells = directCells(headerRow);
+    var left = 0;
+
+    stickyColumnIndexes(table, className).forEach(function(index) {
+      var width = stickyColumnWidth(table, headerCells[index], index, widthVariable);
+
+      applyStickyColumnPosition(table, index, leftVariable, left, widthVariable, width);
+      left += width;
+    });
+  }
+
+  function refreshCssStickyLeftColumns(table) {
+    if (!table || table.getAttribute('aria-hidden') === 'true' || table.classList.contains(FIXED_HEADER_TABLE_CLASS)) return;
+
+    refreshCssStickyLeftColumnSet(table, 'sticky-left', '--sticky-left', '--sticky-width');
+    refreshCssStickyLeftColumnSet(table, 'sticky-left-mobile', '--sticky-mobile-left', '--sticky-mobile-width');
   }
 
   function applyColumnWidth(columnId, width, key) {

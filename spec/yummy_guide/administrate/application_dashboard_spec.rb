@@ -42,6 +42,23 @@ RSpec.describe YummyGuide::Administrate::ApplicationDashboard do
     end
   end
 
+  describe ".index_fixed_column_widths" do
+    # 固定列幅はサブクラスの定数で上書きできることを確認する
+    it "returns the subclass fixed column widths when defined" do
+      subclass = Class.new(described_class)
+      subclass.const_set(:INDEX_FIXED_COLUMN_WIDTHS, { id: "5rem" })
+
+      expect(subclass.index_fixed_column_widths).to eq({ id: "5rem" })
+    end
+
+    # 固定列幅の指定がない場合は親クラスの値にフォールバックすることを確認する
+    it "falls back to the superclass fixed column widths" do
+      subclass = Class.new(described_class)
+
+      expect(subclass.index_fixed_column_widths).to eq({})
+    end
+  end
+
   describe ".collection_attribute_sortable?" do
     it "uses collection attributes when explicit sortable attributes are absent" do
       subclass = Class.new(described_class)
