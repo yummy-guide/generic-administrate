@@ -124,6 +124,11 @@ RSpec.describe "column resizer assets" do
     expect(components_source).to include(":not(.sticky-left-mobile)")
     expect(components_source).to include("th.sticky.actions-column")
     expect(components_source).to include("td.sticky.actions-column")
+    expect(components_source).to include(".scroll-table[data-css-sticky-table] table > thead th")
+    expect(components_source).to include("background-color: #121012")
+    expect(components_source).to include("color: #fff")
+    expect(components_source).to include(".scroll-table[data-css-sticky-table] table > thead th a")
+    expect(components_source).to include("color: inherit")
     expect(components_source).to include("z-index: 6")
   end
 

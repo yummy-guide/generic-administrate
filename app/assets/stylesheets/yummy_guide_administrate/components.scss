@@ -181,6 +181,28 @@
   background-clip: padding-box;
 }
 
+.scroll-table[data-css-sticky-table] table > thead th,
+.sticky-table-scroll[data-css-sticky-table] table > thead th,
+.home-table__wrapper[data-css-sticky-table] table > thead th,
+.table-wrap[data-css-sticky-table] table > thead th,
+.af__table__content[data-css-sticky-table] table > thead th {
+  background-color: #121012;
+  color: #fff;
+}
+
+.scroll-table[data-css-sticky-table] table > thead th a,
+.scroll-table[data-css-sticky-table] table > thead th button,
+.sticky-table-scroll[data-css-sticky-table] table > thead th a,
+.sticky-table-scroll[data-css-sticky-table] table > thead th button,
+.home-table__wrapper[data-css-sticky-table] table > thead th a,
+.home-table__wrapper[data-css-sticky-table] table > thead th button,
+.table-wrap[data-css-sticky-table] table > thead th a,
+.table-wrap[data-css-sticky-table] table > thead th button,
+.af__table__content[data-css-sticky-table] table > thead th a,
+.af__table__content[data-css-sticky-table] table > thead th button {
+  color: inherit;
+}
+
 .table-fixed-header-slot {
   overflow-y: hidden;
 }
