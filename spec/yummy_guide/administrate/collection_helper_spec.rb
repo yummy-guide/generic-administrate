@@ -96,6 +96,50 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
     end
   end
 
+  describe "#yummy_guide_administrate_collection_table_definition" do
+    # 一覧ビューが個別の固定列ヘルパーを組み合わせず、定義オブジェクトから必要な値を参照できることを確認する
+    it "builds the table definition for rendered collection columns" do
+      dashboard_class = Class.new do
+        def self.index_fixed_columns_count
+          2
+        end
+
+        def self.index_mobile_fixed_columns_count
+          1
+        end
+
+        def self.index_fixed_column_widths
+          { customer: "14rem", note: :content }
+        end
+      end
+
+      page = Object.new
+      page.instance_variable_set(:@dashboard, dashboard_class.new)
+      collection_presenter = Struct.new(:attribute_types, :resource_name).new(
+        { id: :integer, customer: :belongs_to, note: :text },
+        "reservation"
+      )
+
+      definition = helper_host.yummy_guide_administrate_collection_table_definition(
+        page: page,
+        collection_presenter: collection_presenter,
+        column_names: %i[id customer note]
+      )
+
+      expect(definition.fixed_columns_count).to eq(2)
+      expect(definition.mobile_fixed_columns_count).to eq(1)
+      expect(definition.sticky_column(:customer)).to include(
+        class: "sticky-left sticky-left--last",
+        style: "--sticky-left: 4rem; --sticky-width: 14rem"
+      )
+      expect(definition.table_style).to include("--admin-sticky-col-2-width: 14rem")
+      expect(definition.table_style).to include("--admin-sticky-col-3-width: max-content")
+      expect(definition.grid_template_columns).to eq("4rem 14rem max-content")
+      expect(definition.column_id(:customer)).to eq("reservation.customer")
+      expect(definition.actions_column_id).to eq("reservation.actions")
+    end
+  end
+
   describe "#yummy_guide_administrate_collection_sticky_columns" do
     # 固定列のclassとCSS変数が表示列順から生成されることを確認する
     it "builds sticky column classes and offsets from the rendered column order" do

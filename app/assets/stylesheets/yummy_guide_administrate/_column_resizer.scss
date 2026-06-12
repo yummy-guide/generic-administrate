@@ -1,4 +1,4 @@
-table.admin-column-resizer__table:not(.table-fixed-header__table) {
+table.admin-column-resizer__table {
   table-layout: auto !important;
   width: max-content !important;
   min-width: 100% !important;
@@ -56,7 +56,7 @@ table.admin-column-resizer__table:not(.table-fixed-header__table) {
 
 .admin-column-resizer__preview {
   position: fixed;
-  z-index: 10000;
+  z-index: var(--admin-column-resizer-preview-z-index, 14);
   box-sizing: border-box;
   pointer-events: none;
   background: rgba(37, 99, 235, 0.12);
@@ -65,14 +65,6 @@ table.admin-column-resizer__table:not(.table-fixed-header__table) {
   box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
   contain: layout paint style;
   will-change: width;
-}
-
-[data-fixed-table-header] .admin-column-resizer__handle {
-  pointer-events: auto;
-}
-
-[data-fixed-table-header] .table-fixed-header__table th.admin-column-resizer__header:not(.sticky):not(.sticky-left) {
-  position: relative;
 }
 
 @media (pointer: coarse), screen and (max-width: 767px) {

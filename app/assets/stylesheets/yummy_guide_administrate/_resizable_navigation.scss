@@ -3,15 +3,30 @@
   body.admin-body > aside {
     --admin-navigation-default-width: 240px;
     align-self: flex-start;
+    background: var(--admin-page-background, #f6f7f7);
+    box-shadow:
+      calc(0px - var(--admin-layout-inline-padding, 0px)) 0 0 var(--admin-layout-inline-padding, 0px) var(--admin-page-background, #f6f7f7),
+      0 calc(0px - var(--admin-navigation-top, 1rem)) 0 var(--admin-navigation-top, 1rem) var(--admin-page-background, #f6f7f7),
+      0 var(--admin-navigation-bottom, 1rem) 0 var(--admin-navigation-bottom, 1rem) var(--admin-page-background, #f6f7f7);
     box-sizing: border-box;
+    display: flex;
     flex: 0 0 clamp(25px, var(--admin-navigation-width, var(--admin-navigation-default-width)), 250px);
-    max-height: calc(100vh - 2rem);
+    flex-direction: column;
+    bottom: var(--admin-navigation-bottom, 1rem);
+    height: calc(100vh - var(--admin-navigation-top, 1rem) - var(--admin-navigation-bottom, 1rem));
+    height: calc(100dvh - var(--admin-navigation-top, 1rem) - var(--admin-navigation-bottom, 1rem));
+    max-height: calc(100vh - var(--admin-navigation-top, 1rem) - var(--admin-navigation-bottom, 1rem));
+    max-height: calc(100dvh - var(--admin-navigation-top, 1rem) - var(--admin-navigation-bottom, 1rem));
+    min-height: 0;
     min-width: 25px;
     max-width: 250px;
-    overflow: visible;
-    position: sticky;
-    top: 1rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: fixed;
+    top: var(--admin-navigation-top, 1rem);
+    left: var(--admin-layout-inline-padding, 0);
     width: clamp(25px, var(--admin-navigation-width, var(--admin-navigation-default-width)), 250px);
+    z-index: var(--admin-navigation-z-index, 40);
   }
 
   body.admin-body > aside:not(.navigation) {
@@ -19,22 +34,28 @@
   }
 
   .app-container > .navigation {
-    max-height: calc(100vh - 3em);
-    max-height: calc(100dvh - 3em);
-    top: 1.5em;
+    top: var(--admin-navigation-top, 1.5rem);
   }
 
-  .app-container > .main-content,
-  body.admin-body > main.admin-main {
-    flex: 1 1 auto;
+  .app-container > .main-content {
+    flex: 0 0 calc(100% - var(--admin-main-left-offset, 0px));
+    margin-left: var(--admin-main-left-offset, 0);
     min-width: 0;
     position: relative;
+    inline-size: calc(100% - var(--admin-main-left-offset, 0px));
+    max-inline-size: calc(100% - var(--admin-main-left-offset, 0px));
+    width: calc(100% - var(--admin-main-left-offset, 0px));
     z-index: 1;
-    width: auto;
   }
 
-  body.admin-body > main.main-content {
-    width: auto;
+  body.admin-body > main.admin-main {
+    box-sizing: border-box;
+    margin-left: var(--admin-sticky-page-header-left, var(--admin-main-left-offset, 0px));
+    min-width: 0;
+    position: relative;
+    max-inline-size: calc(100% - var(--admin-sticky-page-header-left, var(--admin-main-left-offset, 0px)) - var(--admin-layout-inline-padding, 0px));
+    width: calc(100% - var(--admin-sticky-page-header-left, var(--admin-main-left-offset, 0px)) - var(--admin-layout-inline-padding, 0px));
+    z-index: 1;
   }
 
   .admin-navigation-resize-handle {
@@ -68,10 +89,19 @@
   }
 
   .admin-navigation-scroll-area {
+    background: inherit;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
     max-height: inherit;
+    min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+
+  .admin-navigation-scroll-area > * {
+    flex: 0 0 auto;
   }
 
   .admin-navigation-scroll-area .menubar,
@@ -108,12 +138,15 @@
   }
 
   .admin-navigation-scroll-area .button_to {
+    flex: 0 0 auto;
     margin: 0;
   }
 
+  .admin-navigation-scroll-area .loginas,
   .admin-navigation-scroll-area .btn_public,
   .admin-navigation-scroll-area .btn_logout {
     box-sizing: border-box;
+    flex: 0 0 auto;
     margin-left: 0;
     margin-right: 0;
     min-width: 0;

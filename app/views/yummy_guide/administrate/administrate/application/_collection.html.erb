@@ -1,35 +1,30 @@
 <% column_width_storage_scope = local_assigns[:column_width_storage_scope].presence %>
-<% sticky_columns = yummy_guide_administrate_collection_sticky_columns(
+<% table_definition = yummy_guide_administrate_collection_table_definition(
      page: page,
-     collection_presenter: collection_presenter,
-     column_names: collection_presenter.attribute_types.keys
-   ) %>
-<% sticky_table_style = yummy_guide_administrate_collection_sticky_table_style(
-     page: page,
-     column_names: collection_presenter.attribute_types.keys
+     collection_presenter: collection_presenter
    ) %>
 <div class="scroll-table" data-css-sticky-table>
   <table
     aria-labelledby="<%= table_title %>"
-    data-fixed-columns-count="<%= yummy_guide_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
-    data-mobile-fixed-columns-count="<%= yummy_guide_administrate_collection_table_mobile_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
+    data-fixed-columns-count="<%= table_definition.fixed_columns_count %>"
+    data-mobile-fixed-columns-count="<%= table_definition.mobile_fixed_columns_count %>"
     <% if column_width_storage_scope %>
       data-column-resizer-storage-scope="<%= column_width_storage_scope %>"
     <% end %>
-    <% if sticky_table_style.present? %>
-      style="<%= sticky_table_style %>"
+    <% if table_definition.table_style.present? %>
+      style="<%= table_definition.table_style %>"
     <% end %>
   >
     <thead>
       <tr>
         <% collection_presenter.attribute_types.each do |attr_name, attr_type| %>
-          <% sticky_column = sticky_columns[attr_name.to_sym] || {} %>
+          <% sticky_column = table_definition.sticky_column(attr_name) %>
           <th
             class="cell-label cell-label--<%= attr_type.html_class %> cell-label--<%= collection_presenter.ordered_html_class(attr_name) %> cell-label--<%= "#{collection_presenter.resource_name}_#{attr_name}" %> <%= sticky_column[:class] %>"
             <% if sticky_column[:style].present? %>style="<%= sticky_column[:style] %>"<% end %>
             scope="col"
             aria-sort="<%= sort_order(collection_presenter.ordered_html_class(attr_name)) %>"
-            data-column-id="<%= yummy_guide_administrate_collection_column_id(collection_presenter, attr_name) %>"
+            data-column-id="<%= table_definition.column_id(attr_name) %>"
           >
             <%= link_to(sanitized_order_params(page, collection_field_name).merge(
                   collection_presenter.order_params_for(attr_name, key: collection_field_name)
@@ -63,7 +58,7 @@
         <tr class="js-table-row">
           <% collection_presenter.attributes_for(resource).each do |attribute| %>
             <% attribute_name = attribute.respond_to?(:name) ? attribute.name : attribute.attribute %>
-            <% sticky_column = sticky_columns[attribute_name.to_sym] || {} %>
+            <% sticky_column = table_definition.sticky_column(attribute_name) %>
             <% cell_href = yummy_guide_administrate_collection_attribute_path(attribute: attribute, resource: resource, namespace: namespace) %>
             <% cell = yummy_guide_administrate_build_collection_cell(
                  content: render_field(attribute),
