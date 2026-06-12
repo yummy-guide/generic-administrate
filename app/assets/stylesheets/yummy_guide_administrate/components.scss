@@ -684,6 +684,52 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
   background-color: var(--sticky-cell-background, #fff);
 }
 
+@media (max-width: 767px) {
+  .scroll-table table th.sticky.actions-column,
+  .sticky-table-scroll table th.sticky.actions-column,
+  .home-table th.sticky.actions-column,
+  .table-wrap table th.sticky.actions-column,
+  .af__table__content table th.sticky.actions-column,
+  .scroll-table[data-css-sticky-table] table th.sticky.actions-column,
+  .home-table__wrapper[data-css-sticky-table] table th.sticky.actions-column {
+    position: sticky;
+    top: 0;
+    right: auto;
+    z-index: 2;
+    background-color: #121012;
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .scroll-table table td.sticky.actions-column,
+  .sticky-table-scroll table td.sticky.actions-column,
+  .home-table td.sticky.actions-column,
+  .table-wrap table td.sticky.actions-column,
+  .af__table__content table td.sticky.actions-column,
+  .scroll-table[data-css-sticky-table] table td.sticky.actions-column,
+  .home-table__wrapper[data-css-sticky-table] table td.sticky.actions-column {
+    position: static;
+    right: auto;
+    z-index: auto;
+    background-color: var(--sticky-cell-background, #fff);
+    box-shadow: none;
+  }
+
+  .scroll-table table th.sticky.actions-column::before,
+  .scroll-table table td.sticky.actions-column::before,
+  .sticky-table-scroll table th.sticky.actions-column::before,
+  .sticky-table-scroll table td.sticky.actions-column::before,
+  .home-table th.sticky.actions-column::before,
+  .home-table td.sticky.actions-column::before,
+  .table-wrap table th.sticky.actions-column::before,
+  .table-wrap table td.sticky.actions-column::before,
+  .af__table__content table th.sticky.actions-column::before,
+  .af__table__content table td.sticky.actions-column::before {
+    content: none;
+    display: none;
+  }
+}
+
 .actions-column {
   width: 1%;
   min-width: 6rem;
