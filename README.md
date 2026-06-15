@@ -51,15 +51,12 @@ bundle install
   - 管理画面フォーム用の number input text 化 helper
 - 共通 partial / assets
   - collection partial
-  - fixed table header partial
   - filter form partial
   - `clipboards.js`
   - `datetime_input.js`
   - `fixed_submit_actions.js`
   - `filter_controls.js`
   - `filter_form.js`
-  - `sticky_left_columns.js`
-  - `sticky_table_headers.js`
   - `tooltips.js`
   - `components.css`
 - 共通 field
@@ -138,82 +135,66 @@ engine の共通 partial に委譲します。
            collection_field_name: collection_field_name %>
 ```
 
-### 固定ヘッダーの設定
+### 固定ヘッダー / 固定列の設定（CSS sticky）
+
+固定ヘッダー・固定列は **CSS `position: sticky` のみ**で実現します（JS 計算は不要）。
+ポイントは、横スクロール wrapper に `data-css-sticky-table` を付けて
+**有界な内部スクロール領域**にすることです。これにより thead はその領域の
+上端に貼り付き（縦スクロール）、左端の固定列はその領域の左端に貼り付きます
+（横スクロール）。一覧テーブルはページ全体ではなくこのボックス内でスクロール
+します（高さは `--admin-sticky-table-max-height`、既定 `calc(100dvh - 10rem)`）。
 
 #### 1. 最小構成
 
-gem 付属の collection partial をそのまま使う場合、table wrapper と table 本体に
-必要な `data-*` 属性はすでに入っています。そのため、JS / CSS を読み込めば固定
-ヘッダーとカラム幅調整は自動で有効になります。カラム幅調整を使う場合は
-`yummy_guide_administrate/column_resizer.js` も読み込んでください。
+gem 付属の collection partial をそのまま使う場合、wrapper の `data-css-sticky-table` と
+table の `data-*` 属性・各セルの sticky クラス/幅はすでに helper から付与されています。
+`components.css` を読み込めば固定ヘッダーと固定列が有効になります。
+カラム幅のドラッグ調整を使う場合は `yummy_guide_administrate/column_resizer.js` を
+読み込んでください（sticky 自体に JS は不要です）。
 
 内部的には以下のような構造になります。
 
 ```erb
-<div class="scroll-table" data-fixed-header-scroll>
+<div class="scroll-table" data-css-sticky-table>
   <table
     aria-labelledby="<%= table_title %>"
     data-fixed-columns-count="<%= yummy_guide_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
-    data-fixed-header-source
+    data-mobile-fixed-columns-count="<%= yummy_guide_administrate_collection_table_mobile_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
+    style="<%= yummy_guide_administrate_collection_sticky_table_style(page: page, column_names: collection_presenter.attribute_types.keys) %>"
   >
     ...
   </table>
 </div>
 ```
 
-複数画面で幅設定を共有したい場合は、render local に `column_width_storage_scope: "admin.reservations"` のような任意の scope 名を渡してください。
+各 `th` / `td` には `yummy_guide_administrate_collection_sticky_columns(...)` が返す
+`class`（`sticky-left` / `sticky-left-mobile` / `--last`）と `style`
+（`--sticky-left` / `--sticky-width` の calc 値）を付与します。
+複数画面で幅設定を共有したい場合は、render local に
+`column_width_storage_scope: "admin.reservations"` のような任意の scope 名を渡してください。
 
-#### 2. ヘッダー位置を明示したい場合
+#### 2. 固定列数・幅の制御
 
-固定ヘッダーの表示位置をページ上部の特定箇所に合わせたい場合は、
-`data-fixed-table-header` を持つ slot を `.main-content` 配下に置きます。
-gem には専用 partial があります。
-
-```erb
-<header class="main-content__header">
-  <h1 id="page-title">Articles</h1>
-  <%= render "yummy_guide/administrate/administrate/application/fixed_table_header" %>
-</header>
-
-<section class="main-content__body main-content__body--flush">
-  <%= render "yummy_guide/administrate/administrate/application/collection",
-             collection_presenter: collection_presenter,
-             page: page,
-             resources: resources,
-             table_title: "page-title",
-             namespace: :admin,
-             resource_class: resource_class,
-             collection_field_name: resource_name %>
-</section>
-```
-
-`fixed_table_header` partial 自体は以下の 1 行です。
-
-```erb
-<div class="yummy-guide-administrate-fixed-table-header" data-fixed-table-header hidden></div>
-```
-
-この slot を置かない場合でも、JS が table の直前に自動生成します。配置を制御
-したいときだけ明示してください。desktop では LMJ と同じく、`main-content__body--flush`
-と組み合わせることで fixed header のクリップ幅が一覧 body と揃い、一覧 wrapper
-自体には縦スクロールを持たせません。
+- 左端の固定列数は dashboard の `INDEX_FIXED_COLUMNS_COUNT` /
+  `INDEX_MOBILE_FIXED_COLUMNS_COUNT` で制御します。
+- 固定列は固定幅（`width/min/max`）になります。列幅は dashboard の
+  `INDEX_FIXED_COLUMN_WIDTHS = { id: "4rem", customer: "12rem" }` で指定でき、
+  未指定の列は既定値（`DEFAULT_FIXED_COLUMN_WIDTHS` ＋ `8rem`）が使われます。
+- 右端の action 列は `class="sticky actions-column"` を付けると固定できます。
 
 #### 3. 自前の table partial を使う場合
 
 独自の collection partial を書く場合は、少なくとも以下を満たしてください。
 
-- 横スクロール wrapper に `data-fixed-header-scroll` を付ける
-- table に `data-fixed-header-source` を付ける
-- table に `data-fixed-columns-count` を付ける
+- 横スクロール wrapper に `data-css-sticky-table` を付ける
+- table に `data-fixed-columns-count`（必要なら `data-mobile-fixed-columns-count`）を付ける
 - header の `aria-labelledby` がページタイトルと対応している
+- 右端 action 列に `class="sticky actions-column"` を付ける
 
 ```erb
-<%= render "yummy_guide/administrate/administrate/application/fixed_table_header" %>
-
-<div class="scroll-table" data-fixed-header-scroll>
+<div class="scroll-table" data-css-sticky-table>
   <table
     aria-labelledby="page-title"
-    data-fixed-header-source
     data-fixed-columns-count="<%= yummy_guide_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
   >
     <thead>
@@ -237,9 +218,6 @@ gem には専用 partial があります。
   </table>
 </div>
 ```
-
-`sticky actions-column` を action 列に付けると、右端列も固定できます。
-左端の固定列数は dashboard 側の `INDEX_FIXED_COLUMNS_COUNT` で制御します。
 
 ### Datetime filter
 
@@ -501,8 +479,6 @@ block を使わない場合、tooltip 本文はテキストとして扱われ、
 //= require yummy_guide_administrate/fixed_submit_actions
 //= require yummy_guide_administrate/filter_controls
 //= require yummy_guide_administrate/filter_form
-//= require yummy_guide_administrate/sticky_left_columns
-//= require yummy_guide_administrate/sticky_table_headers
 //= require yummy_guide_administrate/tooltips
 ```
 

@@ -62,26 +62,6 @@
   .main-content__body--flush {
     padding: 0 0.5em 1rem;
   }
-
-  .main-content__body--flush > .scroll-table {
-    max-height: none;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  .table-fixed-header-slot[data-fixed-header-inline="true"] {
-    flex-basis: calc(100% + 4rem - 1em);
-    flex-shrink: 0;
-    margin: 0 calc(-2rem + 0.5em) -1rem;
-    overflow-x: hidden;
-    overflow-y: hidden;
-    background: #fff;
-  }
-
-  .table-fixed-header-slot[data-fixed-header-inline="true"] .home-table--fixed-header {
-    min-width: 100%;
-    margin: 0;
-  }
 }
 
 .scroll-table {
@@ -89,7 +69,10 @@
 }
 
 .scroll-table[data-css-sticky-table],
-.home-table__wrapper[data-css-sticky-table] {
+.home-table__wrapper[data-css-sticky-table],
+.sticky-table-scroll[data-css-sticky-table],
+.table-wrap[data-css-sticky-table],
+.af__table__content[data-css-sticky-table] {
   max-width: 100%;
   max-height: var(--admin-sticky-table-max-height, calc(100dvh - 10rem));
   overflow: auto;
@@ -98,7 +81,10 @@
 }
 
 .scroll-table[data-css-sticky-table] table[data-fixed-columns-count],
-.home-table__wrapper[data-css-sticky-table] table[data-fixed-columns-count] {
+.home-table__wrapper[data-css-sticky-table] table[data-fixed-columns-count],
+.sticky-table-scroll[data-css-sticky-table] table[data-fixed-columns-count],
+.table-wrap[data-css-sticky-table] table[data-fixed-columns-count],
+.af__table__content[data-css-sticky-table] table[data-fixed-columns-count] {
   width: max-content;
   min-width: 100%;
 }
@@ -167,6 +153,31 @@
       z-index: 3;
       background-color: var(--sticky-cell-background, #fff);
     }
+
+    .scroll-table table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left)::after,
+    .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left)::after,
+    .home-table__wrapper table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left)::after,
+    .table-wrap table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left)::after,
+    .af__table__content table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left)::after {
+      content: "";
+      position: absolute;
+      top: -1px;
+      right: -1px;
+      bottom: -1px;
+      width: 1px;
+      background-color: #fff;
+      pointer-events: none;
+    }
+
+    @if $index == $count {
+      .scroll-table table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+      .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+      .home-table__wrapper table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+      .table-wrap table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
+      .af__table__content table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left) {
+        box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.35);
+      }
+    }
   }
 }
 
@@ -201,10 +212,6 @@
 .af__table__content[data-css-sticky-table] table > thead th a,
 .af__table__content[data-css-sticky-table] table > thead th button {
   color: inherit;
-}
-
-.table-fixed-header-slot {
-  overflow-y: hidden;
 }
 
 .scroll-table table th,
@@ -435,12 +442,41 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
       .home-table__wrapper table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
       .table-wrap table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
       .af__table__content table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left) {
-        position: static;
         left: auto;
         width: auto;
         min-width: 0;
         max-width: none;
         box-shadow: none;
+      }
+
+      // Body cells: drop the desktop left-sticky entirely on mobile (scroll in both axes).
+      .scroll-table table[data-fixed-columns-count="#{$count}"] td:nth-child(#{$index}):not(.sticky-left),
+      .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] td:nth-child(#{$index}):not(.sticky-left),
+      .home-table__wrapper table[data-fixed-columns-count="#{$count}"] td:nth-child(#{$index}):not(.sticky-left),
+      .table-wrap table[data-fixed-columns-count="#{$count}"] td:nth-child(#{$index}):not(.sticky-left),
+      .af__table__content table[data-fixed-columns-count="#{$count}"] td:nth-child(#{$index}):not(.sticky-left) {
+        position: static;
+      }
+
+      // Header cells: KEEP vertical (top) sticky so the header row stays pinned on mobile,
+      // even for desktop-fixed columns that are no longer horizontally fixed. They must sit
+      // above the body cells (which retain z-index 3 from the desktop rule on mobile).
+      .scroll-table table[data-fixed-columns-count="#{$count}"] th:nth-child(#{$index}):not(.sticky-left),
+      .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] th:nth-child(#{$index}):not(.sticky-left),
+      .home-table__wrapper table[data-fixed-columns-count="#{$count}"] th:nth-child(#{$index}):not(.sticky-left),
+      .table-wrap table[data-fixed-columns-count="#{$count}"] th:nth-child(#{$index}):not(.sticky-left),
+      .af__table__content table[data-fixed-columns-count="#{$count}"] th:nth-child(#{$index}):not(.sticky-left) {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+      }
+
+      .scroll-table table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left)::after,
+      .sticky-table-scroll table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left)::after,
+      .home-table__wrapper table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left)::after,
+      .table-wrap table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left)::after,
+      .af__table__content table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left)::after {
+        content: none;
       }
     }
   }
@@ -470,6 +506,17 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
         background-color: #121012;
       }
 
+      // Frozen header cell must stay above the frozen body column (z-index 3) when
+      // scrolling vertically. The broad `[data-css-sticky-table] thead th { z-index: 2 }`
+      // rule would otherwise let the sticky-left body column paint over the header.
+      .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count="#{$count}"] > thead th:nth-child(#{$index}),
+      .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count="#{$count}"] > thead th:nth-child(#{$index}),
+      .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count="#{$count}"] > thead th:nth-child(#{$index}),
+      .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count="#{$count}"] > thead th:nth-child(#{$index}),
+      .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count="#{$count}"] > thead th:nth-child(#{$index}) {
+        z-index: 6;
+      }
+
       .scroll-table table[data-mobile-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
       .sticky-table-scroll table[data-mobile-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
       .home-table__wrapper table[data-mobile-fixed-columns-count="#{$count}"] td:nth-child(#{$index}),
@@ -477,6 +524,31 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
       .af__table__content table[data-mobile-fixed-columns-count="#{$count}"] td:nth-child(#{$index}) {
         z-index: 3;
         background-color: var(--sticky-cell-background, #fff);
+      }
+
+      .scroll-table table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile)::after,
+      .sticky-table-scroll table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile)::after,
+      .home-table__wrapper table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile)::after,
+      .table-wrap table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile)::after,
+      .af__table__content table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile)::after {
+        content: "";
+        position: absolute;
+        top: -1px;
+        right: -1px;
+        bottom: -1px;
+        width: 1px;
+        background-color: #fff;
+        pointer-events: none;
+      }
+
+      @if $index == $count {
+        .scroll-table table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile),
+        .sticky-table-scroll table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile),
+        .home-table__wrapper table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile),
+        .table-wrap table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile),
+        .af__table__content table[data-mobile-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left-mobile) {
+          box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.35);
+        }
       }
     }
   }
@@ -487,12 +559,28 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
   .sticky-table-scroll table td.sticky-left,
   .home-table th.sticky-left,
   .home-table td.sticky-left {
-    position: static;
     left: auto;
     width: auto;
     min-width: 0;
     max-width: none;
     box-shadow: none;
+  }
+
+  // Body cells: drop the desktop left-sticky on mobile.
+  .scroll-table table td.sticky-left,
+  .sticky-table-scroll table td.sticky-left,
+  .home-table td.sticky-left {
+    position: static;
+  }
+
+  // Header cells: keep vertical (top) sticky so the header row stays pinned on mobile,
+  // and stay above the body cells (z-index 3).
+  .scroll-table table th.sticky-left,
+  .sticky-table-scroll table th.sticky-left,
+  .home-table th.sticky-left {
+    position: sticky;
+    top: 0;
+    z-index: 5;
   }
 
   .scroll-table table th.sticky-left::after,
@@ -566,7 +654,9 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
   .af__table__content[data-css-sticky-table] table[data-fixed-columns-count] > thead th {
     position: sticky;
     top: 0;
-    z-index: 2;
+    // Above the sticky body columns (z-index 3) so the header row is never covered
+    // by a frozen left column when scrolling vertically on mobile.
+    z-index: 5;
     background-color: #121012;
     color: #fff;
     background-clip: padding-box;
@@ -741,164 +831,6 @@ td.actions-column .sticky__item,
 .sticky-table-scroll td.actions-column .sticky__item,
 .home-table td.actions-column .sticky__item {
   width: max-content;
-}
-
-.table-fixed-header-slot {
-  overflow-x: hidden;
-  background: #fff;
-}
-
-[data-fixed-table-header] .table-fixed-header__scroll {
-  width: 100%;
-  display: flex;
-  overflow-x: auto;
-  overflow-y: hidden;
-  pointer-events: none;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-[data-fixed-table-header] .table-fixed-header__table,
-[data-fixed-table-header] .table-fixed-header__table th,
-[data-fixed-table-header] .table-fixed-header__table th a,
-[data-fixed-table-header] .table-fixed-header__table th button {
-  pointer-events: auto;
-}
-
-[data-fixed-table-header] .table-fixed-header__scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.table-fixed-header-slot[data-auto-fixed-table-header] {
-  position: sticky;
-  top: var(--sticky-table-top, 0px);
-  z-index: 9;
-}
-
-.table-fixed-header-slot[data-fixed-header-inline="true"] {
-  position: relative;
-  top: 0;
-}
-
-.table-with-fixed-header thead,
-.home-table--with-fixed-header thead {
-  display: none;
-}
-
-table[data-fixed-columns-count] [data-fixed-header-column-min-width] {
-  box-sizing: border-box;
-  width: var(--fixed-header-column-min-width);
-  min-width: var(--fixed-header-column-min-width);
-}
-
-[data-fixed-table-header] .table-fixed-header__table {
-  width: max-content;
-  min-width: 100%;
-  flex: 0 0 auto;
-  margin: 0;
-  border-collapse: collapse;
-  white-space: normal;
-  will-change: transform;
-}
-
-[data-fixed-table-header] .table-fixed-header__spacer {
-  flex: 0 0 auto;
-  width: 0;
-  min-width: 0;
-  height: 1px;
-}
-
-[data-fixed-table-header] .table-fixed-header__table thead {
-  display: table-header-group;
-}
-
-[data-fixed-table-header] .table-fixed-header__table th {
-  background-color: #121012;
-  color: #fff;
-  border: 1px solid #ccc;
-  border-top-color: #121012;
-  border-bottom-color: #121012;
-  border-left-color: #fff;
-  border-right-color: #fff;
-  box-sizing: border-box;
-  padding: 0.2em 0.5em;
-  vertical-align: middle;
-  background-clip: padding-box;
-}
-
-[data-fixed-table-header] .table-fixed-header__table th:first-child {
-  border-left-color: #121012;
-}
-
-[data-fixed-table-header] .table-fixed-header__table th:last-child {
-  border-right-color: #121012;
-}
-
-[data-fixed-table-header] .table-fixed-header__table td {
-  display: none;
-}
-
-[data-fixed-table-header] .table-fixed-header__table th.sticky {
-  position: sticky;
-  right: 0;
-  z-index: 7;
-  min-width: 0;
-  background-color: #121012;
-  box-shadow: -6px 0 8px -8px rgba(0, 0, 0, 0.35);
-}
-
-[data-fixed-table-header] .table-fixed-header__table th.sticky::before {
-  content: "";
-  position: absolute;
-  top: -1px;
-  left: -1px;
-  bottom: -1px;
-  width: 1px;
-  background-color: #fff;
-  pointer-events: none;
-}
-
-[data-fixed-table-header] .table-fixed-header__table th.sticky-left {
-  position: sticky;
-  z-index: 6;
-  background-color: #121012;
-}
-
-[data-fixed-table-header] .table-fixed-header__table th.sticky-left::after {
-  content: "";
-  position: absolute;
-  top: -1px;
-  right: -1px;
-  bottom: -1px;
-  width: 1px;
-  background-color: #fff;
-  pointer-events: none;
-}
-
-[data-fixed-table-header] .table-fixed-header__table th.sticky-left--last {
-  box-shadow: 6px 0 8px -8px rgba(0, 0, 0, 0.35);
-}
-
-
-.home-table--fixed-header {
-  table-layout: fixed;
-}
-
-.home-table--fixed-header th {
-  position: static;
-  top: auto;
-  z-index: auto;
-  border: 1px solid #121012;
-  white-space: normal;
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-
-
-.home-table--fixed-header th.sticky {
-  position: sticky;
-  right: 0;
-  z-index: 5;
 }
 
 .yummy-guide-administrate-filter-form {
