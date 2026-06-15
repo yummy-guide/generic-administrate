@@ -13,6 +13,10 @@ RSpec.describe "column resizer assets" do
     File.read(File.expand_path("../../../app/assets/stylesheets/yummy_guide_administrate/components.scss", __dir__))
   end
 
+  let(:resizable_navigation_source) do
+    File.read(File.expand_path("../../../app/assets/stylesheets/yummy_guide_administrate/_resizable_navigation.scss", __dir__))
+  end
+
   # 未調整列は内容幅で表示され、調整済み列だけが幅固定されることを静的に確認する
   it "scopes fixed width rules to adjusted columns" do
     expect(javascript_source).to include("data-admin-column-resizer-adjusted-columns")
@@ -35,14 +39,13 @@ RSpec.describe "column resizer assets" do
     expect(stylesheet_source).to include("min-width: 100% !important")
   end
 
-  # ドラッグ中に固定ヘッダー同期を繰り返さず、調整完了後だけ同期することを静的に確認する
-  it "synchronizes fixed headers after drag completion instead of during drag" do
-    expect(javascript_source).not_to include("scheduleStickyRefresh(false)")
-    expect(javascript_source).not_to include("refreshDuringDrag")
-    expect(javascript_source).not_to include("columnNeedsDragRefresh")
-    expect(javascript_source).not_to include("STICKY_REFRESH_INTERVAL")
-    expect(javascript_source).to include("refreshStickyHeaderColumn(pendingWidth, function()")
-    expect(javascript_source).to include("scheduleStickyRefresh(callback)")
+  # 固定ヘッダー複製用の同期処理を持たず、元テーブルの固定左列だけ再計算することを静的に確認する
+  it "does not depend on duplicated fixed header synchronization" do
+    expect(javascript_source).not_to include("YummyGuideAdministrateStickyTableHeaders")
+    expect(javascript_source).not_to include("refreshStickyHeader")
+    expect(javascript_source).not_to include("scheduleStickyRefresh")
+    expect(javascript_source).not_to include("table-fixed-header__table")
+    expect(javascript_source).to include("refreshStickyLeftColumnsForWidth(pendingWidth)")
   end
 
   # ドラッグ中は実テーブルを再レイアウトせず、プレビューだけを更新することを静的に確認する
@@ -115,8 +118,18 @@ RSpec.describe "column resizer assets" do
   # CSSだけで固定ヘッダーと固定左列の初期表示に必要なスタイルがあることを静的に確認する
   it "defines CSS-only sticky table styles" do
     expect(components_source).to include("[data-css-sticky-table]")
-    expect(components_source).to include("max-height: var(--admin-sticky-table-max-height")
-    expect(components_source).to include("top: 0")
+    expect(components_source).not_to include("admin-sticky-table-max-height")
+    expect(components_source).to include("max-height: none")
+    expect(components_source).to include("overflow: visible")
+    expect(components_source).to include(".scroll-table:not([data-css-sticky-table])")
+    expect(components_source).to include("--admin-main-left-offset")
+    expect(components_source).to include("--admin-sticky-table-header-top")
+    expect(components_source).to include("position: fixed")
+    expect(components_source).to include("top: var(--admin-sticky-page-header-top)")
+    expect(components_source).to include("inline-size: 100vw !important")
+    expect(components_source).to include("width: 100vw !important")
+    expect(components_source).to include("right: auto !important")
+    expect(components_source).to include("padding-top: var(--admin-sticky-page-header-height) !important")
     expect(components_source).to include("--sticky-col-1-width")
     expect(components_source).to include("left: var(--sticky-left, 0)")
     expect(components_source).to include("left: var(--sticky-mobile-left, 0)")
@@ -128,6 +141,14 @@ RSpec.describe "column resizer assets" do
     expect(components_source).to include(".scroll-table[data-css-sticky-table] table[data-fixed-columns-count] > thead th")
     expect(components_source).to include(".scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile")
     expect(components_source).to include(".home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile")
+    expect(components_source).to include("th.sticky-left:not(.sticky-left-mobile)")
+    expect(components_source).to include("td.sticky-left:not(.sticky-left-mobile)")
+    expect(components_source).to include("left: auto !important")
+    expect(components_source).to include("position: static !important")
+    expect(components_source).to include('table[data-mobile-fixed-columns-count="1"] th.sticky-left-mobile')
+    expect(components_source).to include("position: sticky !important")
+    expect(components_source).to include("min-inline-size: 100vw !important")
+    expect(components_source).to include("width: max-content !important")
     expect(components_source).to include("@media (max-width: 767px)")
     expect(components_source).to include(".scroll-table table th.sticky.actions-column")
     expect(components_source).to include("right: auto")
@@ -137,6 +158,44 @@ RSpec.describe "column resizer assets" do
     expect(components_source).to include(".scroll-table[data-css-sticky-table] table > thead th a")
     expect(components_source).to include("color: inherit")
     expect(components_source).to include("z-index: 6")
+    expect(components_source).to include("top: var(--admin-sticky-table-header-top, 0)")
+    expect(components_source).to include("--admin-sticky-actions-right: var(--admin-layout-inline-padding)")
+    expect(components_source).to include("right: var(--admin-sticky-actions-right, 0px)")
+    expect(components_source).to include(".scroll-table table th.sticky.actions-column::after")
+    expect(components_source).to include("right: calc(0px - var(--admin-sticky-actions-right, 0px))")
+    expect(components_source).to include("width: var(--admin-sticky-actions-right, 0px)")
+  end
+
+  # 固定ナビがテーブルより前面の不透明なスクロール領域として表示されることを静的に確認する
+  it "keeps fixed navigation above sticky tables with an opaque background" do
+    expect(components_source).to include("--admin-page-background: #f6f7f7")
+    expect(components_source).to include("--admin-navigation-z-index: 40")
+    expect(components_source).to include(".app-container > .navigation")
+    expect(components_source).to include(".app-container > .main-content")
+    expect(components_source).not_to include("\n  .navigation {\n")
+    expect(components_source).not_to include("\n  .main-content {\n")
+    expect(components_source).to include("background: var(--admin-page-background, #f6f7f7)")
+    expect(components_source).to include("height: calc(100dvh - var(--admin-navigation-top, 0px) - var(--admin-navigation-bottom, 0px))")
+    expect(components_source).to include("max-height: calc(100dvh - var(--admin-navigation-top, 0px) - var(--admin-navigation-bottom, 0px))")
+    expect(components_source).to include("min-height: 0")
+    expect(components_source).to include("overflow-x: hidden")
+    expect(components_source).to include("overflow-y: auto")
+    expect(components_source).to include("z-index: var(--admin-navigation-z-index, 40)")
+    expect(components_source).to include("box-shadow: 0 calc(0px - var(--admin-sticky-page-header-top, 0px)) 0 var(--admin-sticky-page-header-top, 0px) var(--admin-page-background, #f6f7f7)")
+    expect(resizable_navigation_source).to include("background: var(--admin-page-background, #f6f7f7)")
+    expect(resizable_navigation_source).to include("background: inherit")
+    expect(resizable_navigation_source).to include("display: flex")
+    expect(resizable_navigation_source).to include("flex: 1 1 auto")
+    expect(resizable_navigation_source).to include("height: calc(100dvh - var(--admin-navigation-top, 1rem) - var(--admin-navigation-bottom, 1rem))")
+    expect(resizable_navigation_source).to include("max-height: calc(100dvh - var(--admin-navigation-top, 1rem) - var(--admin-navigation-bottom, 1rem))")
+    expect(resizable_navigation_source).to include("min-height: 0")
+    expect(resizable_navigation_source).to include("calc(0px - var(--admin-layout-inline-padding, 0px)) 0 0 var(--admin-layout-inline-padding, 0px)")
+    expect(resizable_navigation_source).to include("0 calc(0px - var(--admin-navigation-top, 1rem)) 0 var(--admin-navigation-top, 1rem)")
+    expect(resizable_navigation_source).to include("0 var(--admin-navigation-bottom, 1rem) 0 var(--admin-navigation-bottom, 1rem)")
+    expect(resizable_navigation_source).to include(".admin-navigation-scroll-area .loginas")
+    expect(resizable_navigation_source).to include("flex: 0 0 auto")
+    expect(resizable_navigation_source).to include("overflow-y: auto")
+    expect(resizable_navigation_source).to include("z-index: var(--admin-navigation-z-index, 40)")
   end
 
   # 固定列リサイズ後にCSS変数のleftと幅を再計算する処理があることを静的に確認する
@@ -148,11 +207,13 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).to include("refreshCssStickyLeftColumns(table)")
   end
 
-  # 固定ヘッダー複製APIがなくても幅適用後の完了処理に進めることを静的に確認する
-  it "keeps a resize fallback when fixed header JavaScript is absent" do
-    expect(javascript_source).to include("var api = window.YummyGuideAdministrateStickyTableHeaders")
-    expect(javascript_source).to include("if (api && typeof api.refreshColumnWidth === 'function')")
-    expect(javascript_source).to include("scheduleStickyRefresh(callback)")
+  # 固定ヘッダー複製用のDOM/CSSクラスが残っていないことを静的に確認する
+  it "removes duplicated fixed header hooks from column resize assets" do
+    expect(stylesheet_source).not_to include("data-fixed-table-header")
+    expect(stylesheet_source).not_to include("table-fixed-header__table")
+    expect(components_source).not_to include("data-fixed-table-header")
+    expect(components_source).not_to include("table-fixed-header__table")
+    expect(components_source).not_to include("table-with-fixed-header")
   end
 
   # 幅リセット時も固定列のCSS変数を再計算することを静的に確認する

@@ -16,6 +16,62 @@ module YummyGuide
         customer: "12rem"
       }.freeze
       DEFAULT_FIXED_COLUMN_WIDTH = "8rem"
+      CONTENT_WIDTH_VALUE = "max-content"
+      MAX_MOBILE_FIXED_COLUMNS_COUNT = 1
+
+      CollectionTableDefinition = Struct.new(
+        :column_names,
+        :fixed_columns_count,
+        :mobile_fixed_columns_count,
+        :sticky_columns,
+        :table_style,
+        :grid_template_columns,
+        :column_ids,
+        :actions_column_id,
+        keyword_init: true
+      ) do
+        def sticky_column(column_name)
+          sticky_columns[column_name.to_sym] || {}
+        end
+
+        def column_id(column_name)
+          column_ids[column_name.to_sym]
+        end
+      end
+
+      def yummy_guide_administrate_collection_table_definition(page:, collection_presenter:, column_names: nil)
+        names = (column_names || collection_presenter.attribute_types.keys).map(&:to_sym)
+        widths = yummy_guide_administrate_collection_fixed_column_widths(page: page)
+
+        CollectionTableDefinition.new(
+          column_names: names,
+          fixed_columns_count: yummy_guide_administrate_collection_table_fixed_columns_count_for_names(
+            page: page,
+            column_names: names
+          ),
+          mobile_fixed_columns_count: yummy_guide_administrate_collection_table_mobile_fixed_columns_count_for_names(
+            page: page,
+            column_names: names
+          ),
+          sticky_columns: yummy_guide_administrate_collection_sticky_columns(
+            page: page,
+            collection_presenter: collection_presenter,
+            column_names: names
+          ),
+          table_style: yummy_guide_administrate_collection_sticky_table_style(
+            page: page,
+            column_names: names
+          ),
+          grid_template_columns: yummy_guide_administrate_collection_grid_template_columns(
+            column_names: names,
+            widths: widths
+          ),
+          column_ids: names.index_with do |name|
+            yummy_guide_administrate_collection_column_id(collection_presenter, name)
+          end,
+          actions_column_id: yummy_guide_administrate_collection_actions_column_id(collection_presenter)
+        )
+      end
 
       def yummy_guide_administrate_collection_table_fixed_columns_count(page:, collection_presenter:)
         yummy_guide_administrate_collection_fixed_columns_count_for(
@@ -26,11 +82,14 @@ module YummyGuide
       end
 
       def yummy_guide_administrate_collection_table_mobile_fixed_columns_count(page:, collection_presenter:)
-        yummy_guide_administrate_collection_fixed_columns_count_for(
-          page: page,
-          collection_presenter: collection_presenter,
-          method_name: :index_mobile_fixed_columns_count
-        )
+        [
+          yummy_guide_administrate_collection_fixed_columns_count_for(
+            page: page,
+            collection_presenter: collection_presenter,
+            method_name: :index_mobile_fixed_columns_count
+          ),
+          MAX_MOBILE_FIXED_COLUMNS_COUNT
+        ].min
       rescue NoMethodError
         0
       end
@@ -44,11 +103,14 @@ module YummyGuide
       end
 
       def yummy_guide_administrate_collection_table_mobile_fixed_columns_count_for_names(page:, column_names:)
-        yummy_guide_administrate_collection_fixed_columns_count_for_names(
-          page: page,
-          column_names: column_names.map(&:to_sym),
-          method_name: :index_mobile_fixed_columns_count
-        )
+        [
+          yummy_guide_administrate_collection_fixed_columns_count_for_names(
+            page: page,
+            column_names: column_names.map(&:to_sym),
+            method_name: :index_mobile_fixed_columns_count
+          ),
+          MAX_MOBILE_FIXED_COLUMNS_COUNT
+        ].min
       rescue NoMethodError
         0
       end
@@ -60,10 +122,9 @@ module YummyGuide
           column_names: names,
           method_name: :index_fixed_columns_count
         )
-        mobile_fixed_count = yummy_guide_administrate_collection_fixed_columns_count_for_names(
+        mobile_fixed_count = yummy_guide_administrate_collection_table_mobile_fixed_columns_count_for_names(
           page: page,
-          column_names: names,
-          method_name: :index_mobile_fixed_columns_count
+          column_names: names
         )
         max_count = [fixed_count, mobile_fixed_count].max
         return {} if max_count.zero?
@@ -224,8 +285,24 @@ module YummyGuide
           end
 
         DEFAULT_FIXED_COLUMN_WIDTHS.merge(
-          (configured_widths || {}).to_h.transform_keys(&:to_sym).transform_values(&:to_s)
+          (configured_widths || {}).to_h.each_with_object({}) do |(name, width), widths|
+            next if width.nil?
+
+            widths[name.to_sym] = yummy_guide_administrate_collection_column_width_value(width)
+          end
         )
+      end
+
+      def yummy_guide_administrate_collection_grid_template_columns(column_names:, widths:)
+        column_names.map(&:to_sym).map do |name|
+          widths.fetch(name, CONTENT_WIDTH_VALUE)
+        end.join(" ")
+      end
+
+      def yummy_guide_administrate_collection_column_width_value(width)
+        return CONTENT_WIDTH_VALUE if width.respond_to?(:to_sym) && width.to_sym == :content
+
+        width.to_s
       end
 
       def yummy_guide_administrate_collection_sticky_lefts(column_names, widths)

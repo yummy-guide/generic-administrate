@@ -51,7 +51,6 @@ bundle install
   - 管理画面フォーム用の number input text 化 helper
 - 共通 partial / assets
   - collection partial
-  - fixed table header partial
   - filter form partial
   - `clipboards.js`
   - `datetime_input.js`
@@ -59,7 +58,6 @@ bundle install
   - `filter_controls.js`
   - `filter_form.js`
   - `sticky_left_columns.js`
-  - `sticky_table_headers.js`
   - `tooltips.js`
   - `components.css`
 - 共通 field
@@ -143,18 +141,27 @@ engine の共通 partial に委譲します。
 #### 1. 最小構成
 
 gem 付属の collection partial をそのまま使う場合、table wrapper と table 本体に
-必要な `data-*` 属性はすでに入っています。そのため、JS / CSS を読み込めば固定
-ヘッダーとカラム幅調整は自動で有効になります。カラム幅調整を使う場合は
+必要な `data-*` 属性はすでに入っています。`data-css-sticky-table` は sticky 対象の
+識別子として使い、wrapper 自体には縦横スクロールを持たせません。そのため、ページ
+スクロールに合わせて `thead th` が sticky で固定されます。カラム幅調整を使う場合は
 `yummy_guide_administrate/column_resizer.js` も読み込んでください。
 
 内部的には以下のような構造になります。
 
 ```erb
-<div class="scroll-table" data-fixed-header-scroll>
+<% table_definition = yummy_guide_administrate_collection_table_definition(
+     page: page,
+     collection_presenter: collection_presenter
+   ) %>
+
+<div class="scroll-table" data-css-sticky-table>
   <table
     aria-labelledby="<%= table_title %>"
-    data-fixed-columns-count="<%= yummy_guide_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
-    data-fixed-header-source
+    data-fixed-columns-count="<%= table_definition.fixed_columns_count %>"
+    data-mobile-fixed-columns-count="<%= table_definition.mobile_fixed_columns_count %>"
+    <% if table_definition.table_style.present? %>
+      style="<%= table_definition.table_style %>"
+    <% end %>
   >
     ...
   </table>
@@ -163,63 +170,39 @@ gem 付属の collection partial をそのまま使う場合、table wrapper と
 
 複数画面で幅設定を共有したい場合は、render local に `column_width_storage_scope: "admin.reservations"` のような任意の scope 名を渡してください。
 
-#### 2. ヘッダー位置を明示したい場合
-
-固定ヘッダーの表示位置をページ上部の特定箇所に合わせたい場合は、
-`data-fixed-table-header` を持つ slot を `.main-content` 配下に置きます。
-gem には専用 partial があります。
-
-```erb
-<header class="main-content__header">
-  <h1 id="page-title">Articles</h1>
-  <%= render "yummy_guide/administrate/administrate/application/fixed_table_header" %>
-</header>
-
-<section class="main-content__body main-content__body--flush">
-  <%= render "yummy_guide/administrate/administrate/application/collection",
-             collection_presenter: collection_presenter,
-             page: page,
-             resources: resources,
-             table_title: "page-title",
-             namespace: :admin,
-             resource_class: resource_class,
-             collection_field_name: resource_name %>
-</section>
-```
-
-`fixed_table_header` partial 自体は以下の 1 行です。
-
-```erb
-<div class="yummy-guide-administrate-fixed-table-header" data-fixed-table-header hidden></div>
-```
-
-この slot を置かない場合でも、JS が table の直前に自動生成します。配置を制御
-したいときだけ明示してください。desktop では LMJ と同じく、`main-content__body--flush`
-と組み合わせることで fixed header のクリップ幅が一覧 body と揃い、一覧 wrapper
-自体には縦スクロールを持たせません。
-
-#### 3. 自前の table partial を使う場合
+#### 2. 自前の table partial を使う場合
 
 独自の collection partial を書く場合は、少なくとも以下を満たしてください。
 
-- 横スクロール wrapper に `data-fixed-header-scroll` を付ける
-- table に `data-fixed-header-source` を付ける
+- table wrapper に `data-css-sticky-table` を付ける
+- `data-css-sticky-table` を付けた wrapper に縦横スクロールを持たせない
 - table に `data-fixed-columns-count` を付ける
+- table に `data-mobile-fixed-columns-count` を付ける
+- 固定列数・列幅・固定列class/styleは `yummy_guide_administrate_collection_table_definition` から参照する
 - header の `aria-labelledby` がページタイトルと対応している
 
 ```erb
-<%= render "yummy_guide/administrate/administrate/application/fixed_table_header" %>
+<% table_definition = yummy_guide_administrate_collection_table_definition(
+     page: page,
+     collection_presenter: collection_presenter,
+     column_names: %i[id name]
+   ) %>
 
-<div class="scroll-table" data-fixed-header-scroll>
+<div class="scroll-table" data-css-sticky-table>
   <table
     aria-labelledby="page-title"
-    data-fixed-header-source
-    data-fixed-columns-count="<%= yummy_guide_administrate_collection_table_fixed_columns_count(page: page, collection_presenter: collection_presenter) %>"
+    data-fixed-columns-count="<%= table_definition.fixed_columns_count %>"
+    data-mobile-fixed-columns-count="<%= table_definition.mobile_fixed_columns_count %>"
+    <% if table_definition.table_style.present? %>
+      style="<%= table_definition.table_style %>"
+    <% end %>
   >
     <thead>
       <tr>
-        <th>ID</th>
-        <th>Name</th>
+        <% id_column = table_definition.sticky_column(:id) %>
+        <th class="<%= id_column[:class] %>" style="<%= id_column[:style] %>">ID</th>
+        <% name_column = table_definition.sticky_column(:name) %>
+        <th class="<%= name_column[:class] %>" style="<%= name_column[:style] %>">Name</th>
         <th class="sticky actions-column">Actions</th>
       </tr>
     </thead>
@@ -502,7 +485,6 @@ block を使わない場合、tooltip 本文はテキストとして扱われ、
 //= require yummy_guide_administrate/filter_controls
 //= require yummy_guide_administrate/filter_form
 //= require yummy_guide_administrate/sticky_left_columns
-//= require yummy_guide_administrate/sticky_table_headers
 //= require yummy_guide_administrate/tooltips
 ```
 
