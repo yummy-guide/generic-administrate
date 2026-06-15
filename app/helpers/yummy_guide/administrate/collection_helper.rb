@@ -17,6 +17,7 @@ module YummyGuide
       }.freeze
       DEFAULT_FIXED_COLUMN_WIDTH = "8rem"
       CONTENT_WIDTH_VALUE = "max-content"
+      MAX_MOBILE_FIXED_COLUMNS_COUNT = 1
 
       CollectionTableDefinition = Struct.new(
         :column_names,
@@ -81,11 +82,14 @@ module YummyGuide
       end
 
       def yummy_guide_administrate_collection_table_mobile_fixed_columns_count(page:, collection_presenter:)
-        yummy_guide_administrate_collection_fixed_columns_count_for(
-          page: page,
-          collection_presenter: collection_presenter,
-          method_name: :index_mobile_fixed_columns_count
-        )
+        [
+          yummy_guide_administrate_collection_fixed_columns_count_for(
+            page: page,
+            collection_presenter: collection_presenter,
+            method_name: :index_mobile_fixed_columns_count
+          ),
+          MAX_MOBILE_FIXED_COLUMNS_COUNT
+        ].min
       rescue NoMethodError
         0
       end
@@ -99,11 +103,14 @@ module YummyGuide
       end
 
       def yummy_guide_administrate_collection_table_mobile_fixed_columns_count_for_names(page:, column_names:)
-        yummy_guide_administrate_collection_fixed_columns_count_for_names(
-          page: page,
-          column_names: column_names.map(&:to_sym),
-          method_name: :index_mobile_fixed_columns_count
-        )
+        [
+          yummy_guide_administrate_collection_fixed_columns_count_for_names(
+            page: page,
+            column_names: column_names.map(&:to_sym),
+            method_name: :index_mobile_fixed_columns_count
+          ),
+          MAX_MOBILE_FIXED_COLUMNS_COUNT
+        ].min
       rescue NoMethodError
         0
       end
@@ -115,10 +122,9 @@ module YummyGuide
           column_names: names,
           method_name: :index_fixed_columns_count
         )
-        mobile_fixed_count = yummy_guide_administrate_collection_fixed_columns_count_for_names(
+        mobile_fixed_count = yummy_guide_administrate_collection_table_mobile_fixed_columns_count_for_names(
           page: page,
-          column_names: names,
-          method_name: :index_mobile_fixed_columns_count
+          column_names: names
         )
         max_count = [fixed_count, mobile_fixed_count].max
         return {} if max_count.zero?
