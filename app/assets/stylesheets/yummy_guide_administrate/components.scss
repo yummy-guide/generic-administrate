@@ -163,6 +163,16 @@
 @media screen and (max-width: 767px) {
   body {
     --admin-column-resizer-preview-z-index: 9;
+    --admin-page-background: #fff;
+    background: #fff;
+  }
+
+  body.admin-body,
+  .app-container,
+  .app-container > .main-content,
+  body.admin-body > main.main-content {
+    --admin-page-background: #fff;
+    background: #fff;
   }
 
   .app-container > .main-content {
@@ -181,6 +191,36 @@
   body.admin-body > main.main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table]) {
     --admin-sticky-table-header-top: calc(var(--admin-sticky-page-header-top) + var(--admin-sticky-page-header-height));
     --admin-sticky-table-left-offset: 0px;
+  }
+
+  .app-container:has(> .main-content:has(> .main-content__body--flush [data-css-sticky-table])),
+  .app-container:has(> .main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table])) {
+    padding-top: 0 !important;
+  }
+
+  body.admin-body:has(> main.main-content:has(> .main-content__body--flush [data-css-sticky-table])),
+  body.admin-body:has(> main.main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table])) {
+    padding-top: 0 !important;
+  }
+
+  .app-container > .main-content:has(> .main-content__body--flush [data-css-sticky-table]),
+  .app-container > .main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table]),
+  body.admin-body > main.main-content:has(> .main-content__body--flush [data-css-sticky-table]),
+  body.admin-body > main.main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table]) {
+    border-radius: 0;
+    box-shadow: none;
+    inline-size: max-content !important;
+    margin-top: 0 !important;
+    max-inline-size: none !important;
+    max-width: none !important;
+    min-inline-size: 100vw !important;
+    min-width: 100vw !important;
+    width: max-content !important;
+  }
+
+  .app-container > .main-content:has(> .main-content__body--flush [data-css-sticky-table]),
+  .app-container > .main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table]) {
+    flex-basis: max-content !important;
   }
 
   .main-content__header--sticky-table-layout,
@@ -213,6 +253,19 @@
     padding-left: 0 !important;
     padding-right: 0 !important;
     padding-top: var(--admin-sticky-page-header-height) !important;
+  }
+
+  .main-content__body--flush > .scroll-table[data-css-sticky-table],
+  .main-content__body--flush > .sticky-table-scroll[data-css-sticky-table],
+  .main-content__body--flush > .home-table__wrapper[data-css-sticky-table],
+  .main-content__body--flush > .table-wrap[data-css-sticky-table],
+  .main-content__body--flush > .af__table__content[data-css-sticky-table],
+  [data-reservations-sticky-body] > .scroll-table[data-css-sticky-table],
+  [data-reservations-sticky-body] > .sticky-table-scroll[data-css-sticky-table],
+  [data-reservations-sticky-body] > .home-table__wrapper[data-css-sticky-table],
+  [data-reservations-sticky-body] > .table-wrap[data-css-sticky-table],
+  [data-reservations-sticky-body] > .af__table__content[data-css-sticky-table] {
+    margin-top: 0 !important;
   }
 }
 
@@ -436,6 +489,11 @@
 
 .admin-copy-cell__button[disabled] {
   cursor: default;
+}
+
+.admin-copy-cell__button[data-behavior="copy-cell"],
+.admin-copy-cell__icon {
+  display: none !important;
 }
 
 .admin-copy-cell__link:hover,
@@ -1213,5 +1271,97 @@ td.actions-column .sticky__item,
     min-inline-size: 100vw !important;
     min-width: 100vw !important;
     width: max-content !important;
+  }
+
+  .app-container > .main-content:has(> .main-content__body--flush [data-css-sticky-table]),
+  .app-container > .main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table]),
+  body.admin-body > main.main-content:has(> .main-content__body--flush [data-css-sticky-table]),
+  body.admin-body > main.main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table]) {
+    inline-size: max-content !important;
+    max-inline-size: none !important;
+    max-width: none !important;
+    min-inline-size: 100vw !important;
+    min-width: 100vw !important;
+    overflow: visible !important;
+    width: max-content !important;
+  }
+
+  .main-content__header--sticky-table-layout,
+  [data-reservations-sticky-header],
+  .app-container > .main-content:has(> .main-content__body--flush [data-css-sticky-table]) > .main-content__header,
+  .app-container > .main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table]) > .main-content__header,
+  body.admin-body > main.main-content:has(> .main-content__body--flush [data-css-sticky-table]) > .main-content__header,
+  body.admin-body > main.main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table]) > .main-content__header {
+    inline-size: 100vw !important;
+    left: 0 !important;
+    max-inline-size: 100vw !important;
+    position: fixed !important;
+    right: auto !important;
+    top: var(--admin-sticky-page-header-top, 0px) !important;
+    width: 100vw !important;
+  }
+
+  .scroll-table[data-css-sticky-table] table > thead th,
+  .sticky-table-scroll[data-css-sticky-table] table > thead th,
+  .home-table__wrapper[data-css-sticky-table] table > thead th,
+  .table-wrap[data-css-sticky-table] table > thead th,
+  .af__table__content[data-css-sticky-table] table > thead th {
+    position: sticky !important;
+    top: var(--admin-sticky-table-header-top, 0px) !important;
+    z-index: 8;
+  }
+
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile {
+    left: 0 !important;
+    position: sticky !important;
+  }
+
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] th.sticky-left-mobile {
+    top: var(--admin-sticky-table-header-top, 0px) !important;
+    z-index: 9;
+  }
+
+  .scroll-table[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .sticky-table-scroll[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .home-table__wrapper[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .table-wrap[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile,
+  .af__table__content[data-css-sticky-table] table[data-mobile-fixed-columns-count] td.sticky-left-mobile {
+    z-index: 7;
+  }
+
+  .scroll-table[data-css-sticky-table] table th.sticky.actions-column,
+  .sticky-table-scroll[data-css-sticky-table] table th.sticky.actions-column,
+  .home-table__wrapper[data-css-sticky-table] table th.sticky.actions-column,
+  .table-wrap[data-css-sticky-table] table th.sticky.actions-column,
+  .af__table__content[data-css-sticky-table] table th.sticky.actions-column {
+    left: auto !important;
+    position: sticky !important;
+    right: auto !important;
+    top: var(--admin-sticky-table-header-top, 0px) !important;
+    z-index: 8;
+  }
+
+  .scroll-table[data-css-sticky-table] table td.sticky.actions-column,
+  .sticky-table-scroll[data-css-sticky-table] table td.sticky.actions-column,
+  .home-table__wrapper[data-css-sticky-table] table td.sticky.actions-column,
+  .table-wrap[data-css-sticky-table] table td.sticky.actions-column,
+  .af__table__content[data-css-sticky-table] table td.sticky.actions-column {
+    left: auto !important;
+    position: static !important;
+    right: auto !important;
+    z-index: auto !important;
   }
 }
