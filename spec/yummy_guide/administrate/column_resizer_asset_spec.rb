@@ -230,6 +230,14 @@ RSpec.describe "column resizer assets" do
     expect(components_source).not_to include("table-with-fixed-header")
   end
 
+  # document全体のDOM変更監視と一時切り分け用パラメータが残っていないことを静的に確認する
+  it "does not observe document mutations during table initialization" do
+    expect(javascript_source).not_to include("new MutationObserver")
+    expect(javascript_source).not_to include("mutationObserver.observe(document.documentElement")
+    expect(javascript_source).not_to include("admin_column_resizer_disable")
+    expect(javascript_source).not_to include("probeFeatureDisabled")
+  end
+
   # 幅リセット時も固定列のCSS変数を再計算することを静的に確認する
   it "recalculates CSS sticky-left offsets after clearing a column width" do
     expect(javascript_source).to include("clearColumnWidth(columnId, key)")
