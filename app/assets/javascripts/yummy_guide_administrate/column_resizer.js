@@ -394,14 +394,6 @@
     return tables;
   }
 
-  function shouldInitializeForAddedNode(node) {
-    if (!node.matches) return false;
-    if (node.matches(TABLE_SELECTOR) || (node.querySelector && node.querySelector(TABLE_SELECTOR))) return true;
-    if (!node.closest || !node.closest(TABLE_SELECTOR)) return false;
-
-    return !!node.closest('thead') || node.matches('colgroup, col');
-  }
-
   function allTrackedTables() {
     return Array.from(document.querySelectorAll(TABLE_SELECTOR));
   }
@@ -1039,29 +1031,6 @@
 
   document.addEventListener('turbo:load', initializeFromDocument);
   window.addEventListener('resize', initializeFromDocument);
-
-  if (window.MutationObserver) {
-    var mutationObserver = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        mutation.addedNodes.forEach(function(node) {
-          if (node.nodeType !== Node.ELEMENT_NODE) return;
-          if (!shouldInitializeForAddedNode(node)) return;
-
-          initializeColumnResizer(node);
-          refreshStickyHeaderLayout(node);
-        });
-
-        if (mutation.target && mutation.target.nodeType === Node.ELEMENT_NODE) {
-          refreshStickyHeaderLayout(mutation.target);
-        }
-      });
-    });
-
-    mutationObserver.observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
-  }
 
   window.YummyGuideAdministrateColumnResizer = {
     refreshStickyHeaderLayout: refreshStickyHeaderLayout
