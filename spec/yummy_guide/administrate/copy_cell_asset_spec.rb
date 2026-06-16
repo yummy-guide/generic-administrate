@@ -1,0 +1,27 @@
+# frozen_string_literal: true
+
+RSpec.describe "copy cell assets" do
+  let(:components_source) do
+    File.read(File.expand_path("../../../app/assets/stylesheets/yummy_guide_administrate/components.scss", __dir__))
+  end
+
+  # コピー用ボタンとアイコンをCSSで強制的に隠さないことを静的に確認する
+  it "does not force-hide the copy cell button or icon" do
+    expect(components_source.scan(/\.admin-copy-cell__(?:button|icon)[^{]*\{[^}]*display:\s*none\s*!important/m)).to be_empty
+    expect(components_source).to include(".admin-copy-cell__icon {\n  display: inline-flex;")
+    expect(components_source).to include('mask: image-url("yummy_guide_administrate/icon-copy.svg") center / contain no-repeat;')
+  end
+
+  # テーブルセルではホバーやフォーカス時にコピー操作が表示されることを静的に確認する
+  it "reveals copy cell controls on hover or focus" do
+    expect(components_source).to include("td.cell-data:hover .admin-copy-cell__button:not([disabled])")
+    expect(components_source).to include(".admin-copy-cell:focus-within .admin-copy-cell__link")
+    expect(components_source).to include(".admin-copy-cell__button:focus-visible")
+    expect(components_source).to include("opacity: 1;")
+  end
+
+  # 詳細画面ではコピー操作が常時表示される指定を維持することを静的に確認する
+  it "keeps attribute copy controls visible" do
+    expect(components_source).to match(/\.attribute-data \.admin-copy-cell__link,\s*\.attribute-data \.admin-copy-cell__button:not\(\[disabled\]\) \{\s*opacity: 1;/m)
+  end
+end

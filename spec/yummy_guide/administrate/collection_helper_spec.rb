@@ -270,6 +270,7 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
       expect(cell[:linkable]).to be(false)
       expect(cell[:content]).to include('href="/areas/japan/nagano/matsumoto/articles/test-article"')
       expect(cell[:content]).to include('data-behavior="copy-cell"')
+      expect(cell[:content]).to include('class="admin-copy-cell__icon"')
       expect(cell[:content]).to include('data-copy-text="Page"')
     end
 
