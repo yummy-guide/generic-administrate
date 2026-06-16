@@ -42,7 +42,6 @@ RSpec.describe "column resizer assets" do
   # 固定ヘッダー複製用の同期処理を持たず、元テーブルの固定左列だけ再計算することを静的に確認する
   it "does not depend on duplicated fixed header synchronization" do
     expect(javascript_source).not_to include("YummyGuideAdministrateStickyTableHeaders")
-    expect(javascript_source).not_to include("refreshStickyHeader")
     expect(javascript_source).not_to include("scheduleStickyRefresh")
     expect(javascript_source).not_to include("table-fixed-header__table")
     expect(javascript_source).to include("refreshStickyLeftColumnsForWidth(pendingWidth)")
@@ -147,7 +146,7 @@ RSpec.describe "column resizer assets" do
     expect(components_source).to include("position: static !important")
     expect(components_source).to include('table[data-mobile-fixed-columns-count="1"] th.sticky-left-mobile')
     expect(components_source).to include("position: sticky !important")
-    expect(components_source).to include("min-inline-size: 100vw !important")
+    expect(components_source).to include("min-inline-size: 0 !important")
     expect(components_source).to include("width: max-content !important")
     expect(components_source).to include("@media (max-width: 767px)")
     expect(components_source).to include(".scroll-table table th.sticky.actions-column")
@@ -164,6 +163,21 @@ RSpec.describe "column resizer assets" do
     expect(components_source).to include(".scroll-table table th.sticky.actions-column::after")
     expect(components_source).to include("right: calc(0px - var(--admin-sticky-actions-right, 0px))")
     expect(components_source).to include("width: var(--admin-sticky-actions-right, 0px)")
+  end
+
+  # 固定ページヘッダーの実高さをCSS変数へ反映し、テーブルヘッダー位置を追従させることを静的に確認する
+  it "updates sticky table header offset from measured page header height" do
+    expect(javascript_source).to include("CSS_STICKY_TABLE_SELECTOR = '[data-css-sticky-table]'")
+    expect(javascript_source).to include("STICKY_PAGE_HEADER_HEIGHT_VARIABLE = '--admin-sticky-page-header-height'")
+    expect(javascript_source).to include("function measuredStickyPageHeaderHeight(mainContent, header)")
+    expect(javascript_source).to include("header.getBoundingClientRect().height")
+    expect(javascript_source).to include("header.scrollHeight || 0")
+    expect(javascript_source).to include("mainContent.style.setProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE, value)")
+    expect(javascript_source).to include("mainContent.style.removeProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE)")
+    expect(javascript_source).to include("new ResizeObserver(function()")
+    expect(javascript_source).to include("refreshStickyHeaderLayoutForTable(table)")
+    expect(javascript_source).to include("refreshStickyHeaderLayoutForTable(pendingWidth.sourceTable)")
+    expect(javascript_source).to include("refreshStickyHeaderLayout: refreshStickyHeaderLayout")
   end
 
   # 固定ナビがテーブルより前面の不透明なスクロール領域として表示されることを静的に確認する

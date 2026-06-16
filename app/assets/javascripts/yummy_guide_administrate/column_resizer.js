@@ -1,5 +1,9 @@
 (function() {
   var TABLE_SELECTOR = 'table[data-fixed-columns-count]';
+  var CSS_STICKY_TABLE_SELECTOR = '[data-css-sticky-table]';
+  var MAIN_CONTENT_SELECTOR = '.main-content';
+  var STICKY_PAGE_HEADER_SELECTOR = '.main-content__header--sticky-table-layout, [data-reservations-sticky-header], .main-content__header';
+  var STICKY_PAGE_HEADER_HEIGHT_VARIABLE = '--admin-sticky-page-header-height';
   var HANDLE_CLASS = 'admin-column-resizer__handle';
   var HEADER_CLASS = 'admin-column-resizer__header';
   var TABLE_CLASS = 'admin-column-resizer__table';
@@ -19,6 +23,8 @@
   var generatedRuleCount = 0;
   var initializedHandles = new WeakSet();
   var tableStates = new WeakMap();
+  var stickyPageHeaderResizeObservers = new WeakMap();
+  var stickyPageHeaderLayoutFrames = new WeakMap();
   var applyingWidth = false;
 
   function storageScopeForTable(table) {
@@ -76,6 +82,176 @@
 
     var rectWidth = element.getBoundingClientRect().width;
     return preciseNumber(rectWidth || element.offsetWidth || 0);
+  }
+
+  function pushUnique(array, item) {
+    if (item && array.indexOf(item) === -1) {
+      array.push(item);
+    }
+  }
+
+  function hasCssStickyTable(element) {
+    if (!element) return false;
+
+    return (element.matches && element.matches(CSS_STICKY_TABLE_SELECTOR)) ||
+      !!(element.querySelector && element.querySelector(CSS_STICKY_TABLE_SELECTOR));
+  }
+
+  function closestMainContent(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) return null;
+
+    if (element.matches && element.matches(MAIN_CONTENT_SELECTOR)) {
+      return element;
+    }
+
+    return element.closest ? element.closest(MAIN_CONTENT_SELECTOR) : null;
+  }
+
+  function collectStickyTableMainContents(root) {
+    var mainContents = [];
+    var element = root && root.nodeType === Node.ELEMENT_NODE ? root : null;
+
+    if (element) {
+      pushUnique(mainContents, closestMainContent(element));
+
+      if (element.matches && element.matches(CSS_STICKY_TABLE_SELECTOR)) {
+        pushUnique(mainContents, closestMainContent(element));
+      }
+    }
+
+    if (root && root.querySelectorAll) {
+      root.querySelectorAll(MAIN_CONTENT_SELECTOR).forEach(function(mainContent) {
+        if (hasCssStickyTable(mainContent)) {
+          pushUnique(mainContents, mainContent);
+        }
+      });
+
+      root.querySelectorAll(CSS_STICKY_TABLE_SELECTOR).forEach(function(tableWrapper) {
+        pushUnique(mainContents, closestMainContent(tableWrapper));
+      });
+    }
+
+    return mainContents;
+  }
+
+  function stickyPageHeader(mainContent) {
+    if (!mainContent) return null;
+
+    return Array.from(mainContent.children).find(function(child) {
+      return child.matches && child.matches(STICKY_PAGE_HEADER_SELECTOR);
+    }) || null;
+  }
+
+  function measuredStickyPageHeaderHeight(mainContent, header) {
+    var previousHeight = mainContent.style.getPropertyValue(STICKY_PAGE_HEADER_HEIGHT_VARIABLE);
+
+    if (previousHeight) {
+      mainContent.style.removeProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE);
+    }
+
+    var rectHeight = header.getBoundingClientRect().height;
+    var scrollHeight = header.scrollHeight || 0;
+    var height = Math.max(rectHeight || 0, scrollHeight);
+
+    if (previousHeight) {
+      mainContent.style.setProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE, previousHeight);
+    }
+
+    return preciseNumber(height);
+  }
+
+  function refreshStickyPageHeaderLayout(mainContent) {
+    if (!mainContent) return false;
+
+    if (!hasCssStickyTable(mainContent)) {
+      mainContent.style.removeProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE);
+      return false;
+    }
+
+    var header = stickyPageHeader(mainContent);
+
+    if (!header) {
+      mainContent.style.removeProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE);
+      return false;
+    }
+
+    var height = measuredStickyPageHeaderHeight(mainContent, header);
+
+    if (height > 0) {
+      var value = cssPixelValue(height);
+
+      if (mainContent.style.getPropertyValue(STICKY_PAGE_HEADER_HEIGHT_VARIABLE) !== value) {
+        mainContent.style.setProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE, value);
+      }
+    } else {
+      mainContent.style.removeProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE);
+    }
+
+    return true;
+  }
+
+  function observeStickyPageHeaderLayout(mainContent) {
+    if (!window.ResizeObserver || !mainContent) return;
+
+    var header = stickyPageHeader(mainContent);
+    var currentObserver = stickyPageHeaderResizeObservers.get(mainContent);
+
+    if (!header) {
+      if (currentObserver) {
+        currentObserver.observer.disconnect();
+        stickyPageHeaderResizeObservers.delete(mainContent);
+      }
+      return;
+    }
+
+    if (currentObserver && currentObserver.header === header) return;
+
+    if (currentObserver) {
+      currentObserver.observer.disconnect();
+    }
+
+    var observer = new ResizeObserver(function() {
+      scheduleStickyPageHeaderLayout(mainContent);
+    });
+
+    observer.observe(header);
+
+    stickyPageHeaderResizeObservers.set(mainContent, {
+      header: header,
+      observer: observer
+    });
+  }
+
+  function scheduleStickyPageHeaderLayout(mainContent) {
+    if (!mainContent || stickyPageHeaderLayoutFrames.has(mainContent)) return;
+
+    var frame = window.requestAnimationFrame(function() {
+      stickyPageHeaderLayoutFrames.delete(mainContent);
+      refreshStickyPageHeaderLayout(mainContent);
+      observeStickyPageHeaderLayout(mainContent);
+    });
+
+    stickyPageHeaderLayoutFrames.set(mainContent, frame);
+  }
+
+  function refreshStickyHeaderLayout(root) {
+    var refreshed = false;
+
+    collectStickyTableMainContents(root || document).forEach(function(mainContent) {
+      refreshed = refreshStickyPageHeaderLayout(mainContent) || refreshed;
+      observeStickyPageHeaderLayout(mainContent);
+    });
+
+    return refreshed;
+  }
+
+  function refreshStickyHeaderLayoutForTable(table) {
+    var mainContent = closestMainContent(table);
+
+    if (!mainContent) return false;
+
+    scheduleStickyPageHeaderLayout(mainContent);
+    return true;
   }
 
   function viewportHeight() {
@@ -422,6 +598,7 @@
       if (key && storageKeyForTable(table) !== key) return;
 
       applyTableColumnWidth(table, columnId, width);
+      refreshStickyHeaderLayoutForTable(table);
     });
   }
 
@@ -430,6 +607,7 @@
       if (key && storageKeyForTable(table) !== key) return;
 
       clearTableColumnWidth(table, columnId);
+      refreshStickyHeaderLayoutForTable(table);
     });
   }
 
@@ -440,6 +618,8 @@
 
       applyTableColumnWidth(table, columnId, width);
     });
+
+    refreshStickyHeaderLayoutForTable(table);
   }
 
   function applyStoredWidthsToTables(tables) {
@@ -609,6 +789,8 @@
   }
 
   function refreshStickyLeftColumns(sourceTable) {
+    refreshStickyHeaderLayoutForTable(sourceTable);
+
     var api = window.YummyGuideAdministrateStickyLeftColumns;
 
     if (api && typeof api.refreshTable === 'function') {
@@ -671,6 +853,7 @@
       widths[pendingWidth.columnId] = preciseNumber(pendingWidth.width);
       safeWriteWidths(pendingWidth.storageKey, widths);
       refreshStickyLeftColumnsForWidth(pendingWidth);
+      refreshStickyHeaderLayoutForTable(pendingWidth.sourceTable);
       window.requestAnimationFrame(function() {
         stopApplyingWidth(pendingWidth.preview);
       });
@@ -841,6 +1024,7 @@
     });
 
     applyStoredWidthsToTables(configuredTables);
+    refreshStickyHeaderLayout(root);
   }
 
   function initializeFromDocument() {
@@ -864,7 +1048,12 @@
           if (!shouldInitializeForAddedNode(node)) return;
 
           initializeColumnResizer(node);
+          refreshStickyHeaderLayout(node);
         });
+
+        if (mutation.target && mutation.target.nodeType === Node.ELEMENT_NODE) {
+          refreshStickyHeaderLayout(mutation.target);
+        }
       });
     });
 
@@ -873,6 +1062,10 @@
       subtree: true
     });
   }
+
+  window.YummyGuideAdministrateColumnResizer = {
+    refreshStickyHeaderLayout: refreshStickyHeaderLayout
+  };
 
   setTimeout(initializeFromDocument, 100);
   setTimeout(initializeFromDocument, 300);
