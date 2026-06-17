@@ -64,8 +64,36 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).not_to include("applyColumnWidth(dragState.columnId, dragState.currentWidth")
   end
 
+  # プレビュー表示はブラウザの現在表示範囲へ収め、実際の適用幅は維持することを静的に確認する
+  it "clips the drag preview to the visible viewport width" do
+    expect(javascript_source).to include("function viewportWidth()")
+    expect(javascript_source).to include("var viewportRight = viewportWidth()")
+    expect(javascript_source).to include("var left = Math.max(0, Math.min(headerRect.left, viewportRight))")
+    expect(javascript_source).to include("height: Math.max(32, viewportBottom - top)")
+    expect(javascript_source).to include("hiddenLeft: Math.max(0, left - headerRect.left)")
+    expect(javascript_source).to include("maxWidth: Math.max(0, viewportRight - left)")
+    expect(javascript_source).to include("var visibleWidth = Math.max(0, width - preview.hiddenLeft)")
+    expect(javascript_source).to include("Math.min(visibleWidth, preview.maxWidth)")
+    expect(javascript_source).to include("width: Math.max(MIN_WIDTH, dragState.currentWidth || dragState.startWidth)")
+  end
+
+  # プレビューはヘッダー矩形とviewportだけで表示し、重いテーブル範囲計測を使わないことを静的に確認する
+  it "shows the drag preview without measuring the full table bounds" do
+    expect(javascript_source).to include("function previewBoundsFromHeader(headerRect)")
+    expect(javascript_source).to include("var bounds = previewBoundsFromHeader(resolvedHeaderRect)")
+    expect(javascript_source).to include("applyDragPreviewBounds(preview, bounds)")
+    expect(javascript_source).to include("previewParentForTable(table).appendChild(element)")
+    expect(javascript_source).not_to include("function previewBoundsForTable")
+    expect(javascript_source).not_to include("scheduleDragPreviewBoundsRefresh")
+    expect(javascript_source).not_to include("boundsFrame")
+    expect(javascript_source).not_to include("var tableRect = table.getBoundingClientRect()")
+    expect(javascript_source).not_to include("scrollContainer.getBoundingClientRect()")
+  end
+
   # ドラッグ開始時はヘッダー矩形と幅の計測結果を再利用し、プレビュー表示までの同期計測を減らすことを静的に確認する
   it "reuses resize handle measurements when starting a drag" do
+    expect(javascript_source).to include("headers: headers")
+    expect(javascript_source).to include("return state.headers[index] || null")
     expect(javascript_source).to include("function resizeTargetFromEvent(event)")
     expect(javascript_source).to include("var handleRect = target.rect")
     expect(javascript_source).to include("var handleHeaderWidth = preciseNumber(handleRect.width || header.offsetWidth || 0)")

@@ -240,6 +240,10 @@
     return window.innerHeight || document.documentElement.clientHeight || 0;
   }
 
+  function viewportWidth() {
+    return window.innerWidth || document.documentElement.clientWidth || 0;
+  }
+
   function directCells(row) {
     return Array.from(row.children).filter(function(cell) {
       return cell.tagName === 'TH' || cell.tagName === 'TD';
@@ -347,6 +351,7 @@
     });
 
     var state = {
+      headers: headers,
       columnCount: headers.length,
       indexByColumnId: indexByColumnId
     };
@@ -356,18 +361,12 @@
     return state;
   }
 
-  function columnIndex(table, columnId) {
-    var state = stateForTable(table);
-    if (!state || state.indexByColumnId[columnId] === undefined) return -1;
-
-    return state.indexByColumnId[columnId];
-  }
-
   function columnHeader(table, columnId) {
-    var index = columnIndex(table, columnId);
-    if (index < 0) return null;
+    var state = stateForTable(table);
+    var index = state && state.indexByColumnId[columnId];
+    if (!state || index === undefined) return null;
 
-    return columnHeaders(table)[index] || null;
+    return state.headers[index] || null;
   }
 
   function applyColgroupWidth(table, columnCount, index, widthValue) {
@@ -557,24 +556,18 @@
     return table && table.getAttribute('aria-hidden') !== 'true' ? table : null;
   }
 
-  function previewBoundsForTable(table, header, headerRect) {
-    var resolvedHeaderRect = headerRect || header.getBoundingClientRect();
-    var tableRect = table.getBoundingClientRect();
-    var scrollContainer = table.closest('.sticky-table-scroll, .scroll-table, .home-table__wrapper');
-    var scrollRect = scrollContainer ? scrollContainer.getBoundingClientRect() : tableRect;
+  function previewBoundsFromHeader(headerRect) {
+    var viewportRight = viewportWidth();
     var viewportBottom = viewportHeight();
-    var top = Math.max(tableRect.top, scrollRect.top);
-    var bottom = Math.min(viewportBottom, Math.max(tableRect.bottom, scrollRect.bottom, resolvedHeaderRect.bottom));
-
-    top = Math.max(0, Math.min(top, viewportBottom));
-    if (bottom <= top) {
-      bottom = Math.min(viewportBottom, top + Math.max(resolvedHeaderRect.height, 32));
-    }
+    var left = Math.max(0, Math.min(headerRect.left, viewportRight));
+    var top = Math.max(0, Math.min(headerRect.top, viewportBottom));
 
     return {
-      left: resolvedHeaderRect.left,
+      left: left,
       top: top,
-      height: Math.max(32, bottom - top)
+      height: Math.max(32, viewportBottom - top),
+      hiddenLeft: Math.max(0, left - headerRect.left),
+      maxWidth: Math.max(0, viewportRight - left)
     };
   }
 
@@ -585,25 +578,40 @@
   function updateDragPreview(preview, width) {
     if (!preview) return;
 
-    preview.element.style.width = cssPixelValue(width);
+    preview.currentWidth = width;
+    var visibleWidth = Math.max(0, width - preview.hiddenLeft);
+
+    preview.element.style.width = cssPixelValue(Math.min(visibleWidth, preview.maxWidth));
+  }
+
+  function applyDragPreviewBounds(preview, bounds) {
+    if (!preview || !bounds) return;
+
+    preview.hiddenLeft = bounds.hiddenLeft;
+    preview.maxWidth = bounds.maxWidth;
+    preview.element.style.left = cssPixelValue(bounds.left);
+    preview.element.style.top = cssPixelValue(bounds.top);
+    preview.element.style.height = cssPixelValue(bounds.height);
+    updateDragPreview(preview, preview.currentWidth);
   }
 
   function createDragPreview(table, header, width, headerRect) {
-    var bounds = previewBoundsForTable(table, header, headerRect);
+    var resolvedHeaderRect = headerRect || header.getBoundingClientRect();
+    var bounds = previewBoundsFromHeader(resolvedHeaderRect);
     var element = document.createElement('div');
 
     element.className = PREVIEW_CLASS;
     element.setAttribute('aria-hidden', 'true');
-    element.style.left = cssPixelValue(bounds.left);
-    element.style.top = cssPixelValue(bounds.top);
-    element.style.height = cssPixelValue(bounds.height);
-
-    previewParentForTable(table).appendChild(element);
 
     var preview = {
-      element: element
+      element: element,
+      hiddenLeft: bounds.hiddenLeft,
+      maxWidth: bounds.maxWidth,
+      currentWidth: width
     };
-    updateDragPreview(preview, width);
+
+    applyDragPreviewBounds(preview, bounds);
+    previewParentForTable(table).appendChild(element);
 
     return preview;
   }
