@@ -1,13 +1,17 @@
 <% column_width_storage_scope = local_assigns[:column_width_storage_scope].presence %>
 <% table_definition = yummy_guide_administrate_collection_table_definition(
      page: page,
-     collection_presenter: collection_presenter
+     collection_presenter: collection_presenter,
+     column_width_storage_scope: column_width_storage_scope
    ) %>
 <div class="scroll-table" data-css-sticky-table>
   <table
     aria-labelledby="<%= table_title %>"
     data-fixed-columns-count="<%= table_definition.fixed_columns_count %>"
     data-mobile-fixed-columns-count="<%= table_definition.mobile_fixed_columns_count %>"
+    <% if table_definition.adjusted_column_indexes.present? %>
+      data-admin-column-resizer-adjusted-columns="<%= table_definition.adjusted_column_indexes.join(" ") %>"
+    <% end %>
     <% if column_width_storage_scope %>
       data-column-resizer-storage-scope="<%= column_width_storage_scope %>"
     <% end %>
@@ -15,6 +19,13 @@
       style="<%= table_definition.table_style %>"
     <% end %>
   >
+    <% if table_definition.colgroup_widths.any?(&:present?) %>
+      <colgroup data-admin-column-resizer-colgroup="true">
+        <% table_definition.colgroup_widths.each do |width| %>
+          <col<% if width.present? %> style="width: <%= width %>"<% end %>>
+        <% end %>
+      </colgroup>
+    <% end %>
     <thead>
       <tr>
         <% collection_presenter.attribute_types.each do |attr_name, attr_type| %>

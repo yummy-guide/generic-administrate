@@ -59,6 +59,23 @@ RSpec.describe YummyGuide::Administrate::ApplicationDashboard do
     end
   end
 
+  describe ".index_default_column_widths" do
+    # リサイズ可能列の初期幅はサブクラスの定数で指定できることを確認する
+    it "returns the subclass default column widths when defined" do
+      subclass = Class.new(described_class)
+      subclass.const_set(:INDEX_DEFAULT_COLUMN_WIDTHS, { interview_summary: "800px" })
+
+      expect(subclass.index_default_column_widths).to eq({ interview_summary: "800px" })
+    end
+
+    # 初期幅指定がない場合は親クラスの値にフォールバックすることを確認する
+    it "falls back to the superclass default column widths" do
+      subclass = Class.new(described_class)
+
+      expect(subclass.index_default_column_widths).to eq({})
+    end
+  end
+
   describe ".collection_attribute_sortable?" do
     it "uses collection attributes when explicit sortable attributes are absent" do
       subclass = Class.new(described_class)

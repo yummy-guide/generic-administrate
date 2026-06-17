@@ -28,6 +28,8 @@ module YummyGuide
         :grid_template_columns,
         :column_ids,
         :actions_column_id,
+        :adjusted_column_indexes,
+        :colgroup_widths,
         keyword_init: true
       ) do
         def sticky_column(column_name)
@@ -39,9 +41,15 @@ module YummyGuide
         end
       end
 
-      def yummy_guide_administrate_collection_table_definition(page:, collection_presenter:, column_names: nil)
+      def yummy_guide_administrate_collection_table_definition(page:, collection_presenter:, column_names: nil, column_width_storage_scope: nil)
         names = (column_names || collection_presenter.attribute_types.keys).map(&:to_sym)
         widths = yummy_guide_administrate_collection_fixed_column_widths(page: page)
+        column_ids = names.index_with do |name|
+          yummy_guide_administrate_collection_column_id(collection_presenter, name)
+        end
+        resolved_column_width_storage_scope = yummy_guide_administrate_collection_column_width_storage_scope(column_width_storage_scope)
+        saved_column_widths = yummy_guide_administrate_collection_saved_column_widths(resolved_column_width_storage_scope)
+        default_column_widths = yummy_guide_administrate_collection_default_column_widths(page: page)
 
         CollectionTableDefinition.new(
           column_names: names,
@@ -56,20 +64,36 @@ module YummyGuide
           sticky_columns: yummy_guide_administrate_collection_sticky_columns(
             page: page,
             collection_presenter: collection_presenter,
-            column_names: names
+            column_names: names,
+            column_ids: column_ids,
+            default_column_widths: default_column_widths,
+            saved_column_widths: saved_column_widths
           ),
-          table_style: yummy_guide_administrate_collection_sticky_table_style(
+          table_style: yummy_guide_administrate_collection_table_style(
             page: page,
-            column_names: names
+            column_names: names,
+            column_ids: column_ids,
+            default_column_widths: default_column_widths,
+            saved_column_widths: saved_column_widths
           ),
           grid_template_columns: yummy_guide_administrate_collection_grid_template_columns(
             column_names: names,
             widths: widths
           ),
-          column_ids: names.index_with do |name|
-            yummy_guide_administrate_collection_column_id(collection_presenter, name)
-          end,
-          actions_column_id: yummy_guide_administrate_collection_actions_column_id(collection_presenter)
+          column_ids: column_ids,
+          actions_column_id: yummy_guide_administrate_collection_actions_column_id(collection_presenter),
+          adjusted_column_indexes: yummy_guide_administrate_collection_adjusted_column_indexes(
+            column_names: names,
+            column_ids: column_ids,
+            default_column_widths: default_column_widths,
+            saved_column_widths: saved_column_widths
+          ),
+          colgroup_widths: yummy_guide_administrate_collection_colgroup_widths(
+            column_names: names,
+            column_ids: column_ids,
+            default_column_widths: default_column_widths,
+            saved_column_widths: saved_column_widths
+          )
         )
       end
 
@@ -115,7 +139,7 @@ module YummyGuide
         0
       end
 
-      def yummy_guide_administrate_collection_sticky_columns(page:, collection_presenter:, column_names:)
+      def yummy_guide_administrate_collection_sticky_columns(page:, collection_presenter:, column_names:, column_ids: nil, default_column_widths: {}, saved_column_widths: {})
         names = column_names.map(&:to_sym)
         fixed_count = yummy_guide_administrate_collection_fixed_columns_count_for_names(
           page: page,
@@ -129,7 +153,21 @@ module YummyGuide
         max_count = [fixed_count, mobile_fixed_count].max
         return {} if max_count.zero?
 
-        widths = yummy_guide_administrate_collection_fixed_column_widths(page: page)
+        base_widths = yummy_guide_administrate_collection_fixed_column_widths(page: page)
+        column_ids ||= names.index_with do |name|
+          if collection_presenter.respond_to?(:resource_name)
+            yummy_guide_administrate_collection_column_id(collection_presenter, name)
+          else
+            name.to_s
+          end
+        end
+        widths = yummy_guide_administrate_collection_effective_column_widths(
+          column_names: names,
+          column_ids: column_ids,
+          base_widths: base_widths,
+          default_column_widths: default_column_widths,
+          saved_column_widths: saved_column_widths
+        )
         desktop_lefts = yummy_guide_administrate_collection_sticky_lefts(names.first(fixed_count), widths)
         mobile_lefts = yummy_guide_administrate_collection_sticky_lefts(names.first(mobile_fixed_count), widths)
 
@@ -159,10 +197,19 @@ module YummyGuide
         end
       end
 
-      def yummy_guide_administrate_collection_sticky_table_style(page:, column_names:)
-        widths = yummy_guide_administrate_collection_fixed_column_widths(page: page)
+      def yummy_guide_administrate_collection_sticky_table_style(page:, column_names:, column_ids: nil, default_column_widths: {}, saved_column_widths: {})
+        names = column_names.map(&:to_sym)
+        base_widths = yummy_guide_administrate_collection_fixed_column_widths(page: page)
+        column_ids ||= names.index_with { |name| name.to_s }
+        widths = yummy_guide_administrate_collection_effective_column_widths(
+          column_names: names,
+          column_ids: column_ids,
+          base_widths: base_widths,
+          default_column_widths: default_column_widths,
+          saved_column_widths: saved_column_widths
+        )
 
-        column_names.map(&:to_sym).first(6).each_with_index.flat_map do |name, index|
+        names.first(6).each_with_index.flat_map do |name, index|
           width = widths.fetch(name, DEFAULT_FIXED_COLUMN_WIDTH)
           column_number = index + 1
 
@@ -171,6 +218,24 @@ module YummyGuide
             "--admin-sticky-mobile-col-#{column_number}-width: #{width}"
           ]
         end.join("; ")
+      end
+
+      def yummy_guide_administrate_collection_table_style(page:, column_names:, column_ids:, default_column_widths:, saved_column_widths:)
+        [
+          yummy_guide_administrate_collection_sticky_table_style(
+            page: page,
+            column_names: column_names,
+            column_ids: column_ids,
+            default_column_widths: default_column_widths,
+            saved_column_widths: saved_column_widths
+          ),
+          yummy_guide_administrate_collection_resizable_table_style(
+            column_names: column_names,
+            column_ids: column_ids,
+            default_column_widths: default_column_widths,
+            saved_column_widths: saved_column_widths
+          )
+        ].reject(&:blank?).join("; ")
       end
 
       def yummy_guide_administrate_collection_column_id(collection_presenter, column_name)
@@ -291,6 +356,106 @@ module YummyGuide
             widths[name.to_sym] = yummy_guide_administrate_collection_column_width_value(width)
           end
         )
+      end
+
+      def yummy_guide_administrate_collection_default_column_widths(page:)
+        configured_widths =
+          if page.respond_to?(:instance_variable_defined?) && page.instance_variable_defined?(:@dashboard)
+            dashboard = page.instance_variable_get(:@dashboard)
+            dashboard.class.index_default_column_widths if dashboard&.class&.respond_to?(:index_default_column_widths)
+          end
+
+        (configured_widths || {}).to_h.each_with_object({}) do |(name, width), widths|
+          next if width.nil?
+
+          value = yummy_guide_administrate_collection_column_width_value(width)
+          next if value == CONTENT_WIDTH_VALUE
+
+          widths[name.to_sym] = value
+        end
+      end
+
+      def yummy_guide_administrate_collection_column_width_storage_scope(column_width_storage_scope)
+        column_width_storage_scope.presence ||
+          (request.path if respond_to?(:request) && request.respond_to?(:path))
+      end
+
+      def yummy_guide_administrate_collection_saved_column_widths(column_width_storage_scope)
+        return {} if column_width_storage_scope.blank?
+
+        if respond_to?(:yummy_guide_administrate_admin_browser_column_widths)
+          yummy_guide_administrate_admin_browser_column_widths(column_width_storage_scope)
+        elsif respond_to?(:controller) && controller.respond_to?(:yummy_guide_administrate_admin_browser_column_widths)
+          controller.yummy_guide_administrate_admin_browser_column_widths(column_width_storage_scope)
+        else
+          {}
+        end
+      end
+
+      def yummy_guide_administrate_collection_resizable_table_style(column_names:, column_ids:, default_column_widths:, saved_column_widths:)
+        column_names.map(&:to_sym).each_with_index.flat_map do |name, index|
+          column_number = index + 1
+          column_id = column_ids[name].to_s
+          default_width = default_column_widths[name]
+          saved_width = yummy_guide_administrate_collection_saved_column_width(saved_column_widths, column_id)
+          saved_width = yummy_guide_administrate_collection_css_pixel_value(saved_width) if saved_width.present?
+          next [] if default_width.blank? && saved_width.blank?
+
+          styles = []
+          styles << "--admin-column-resizer-default-col-#{column_number}: #{default_width}" if default_width.present?
+          styles << "--admin-column-resizer-user-col-#{column_number}: #{saved_width}" if saved_width.present?
+          styles << "--admin-column-resizer-col-#{column_number}: #{yummy_guide_administrate_collection_effective_column_width_value(column_number, default_width: default_width)}"
+          styles
+        end.flatten.join("; ")
+      end
+
+      def yummy_guide_administrate_collection_effective_column_width_value(column_number, default_width:)
+        user_width = "var(--admin-column-resizer-user-col-#{column_number})"
+        return user_width if default_width.blank?
+
+        "var(--admin-column-resizer-user-col-#{column_number}, var(--admin-column-resizer-default-col-#{column_number}))"
+      end
+
+      def yummy_guide_administrate_collection_adjusted_column_indexes(column_names:, column_ids:, default_column_widths:, saved_column_widths:)
+        column_names.map(&:to_sym).each_with_index.filter_map do |name, index|
+          column_id = column_ids[name].to_s
+          next unless default_column_widths[name].present? || yummy_guide_administrate_collection_saved_column_width(saved_column_widths, column_id).present?
+
+          index + 1
+        end
+      end
+
+      def yummy_guide_administrate_collection_colgroup_widths(column_names:, column_ids:, default_column_widths:, saved_column_widths:)
+        column_names.map(&:to_sym).map do |name|
+          column_id = column_ids[name].to_s
+          saved_width = yummy_guide_administrate_collection_saved_column_width(saved_column_widths, column_id)
+          next yummy_guide_administrate_collection_css_pixel_value(saved_width) if saved_width.present?
+
+          default_column_widths[name].presence
+        end
+      end
+
+      def yummy_guide_administrate_collection_effective_column_widths(column_names:, column_ids:, base_widths:, default_column_widths:, saved_column_widths:)
+        column_names.map(&:to_sym).each_with_object(base_widths.dup) do |name, widths|
+          column_id = column_ids[name].to_s
+          saved_width = yummy_guide_administrate_collection_saved_column_width(saved_column_widths, column_id)
+
+          if saved_width.present?
+            widths[name] = yummy_guide_administrate_collection_css_pixel_value(saved_width)
+          elsif default_column_widths[name].present?
+            widths[name] = default_column_widths[name]
+          end
+        end
+      end
+
+      def yummy_guide_administrate_collection_saved_column_width(saved_column_widths, column_id)
+        saved_column_widths[column_id] || saved_column_widths[column_id.to_sym]
+      end
+
+      def yummy_guide_administrate_collection_css_pixel_value(value)
+        numeric_value = value.to_f
+        rounded_value = (numeric_value * 1000).round / 1000.0
+        rounded_value == rounded_value.to_i ? "#{rounded_value.to_i}px" : "#{rounded_value}px"
       end
 
       def yummy_guide_administrate_collection_grid_template_columns(column_names:, widths:)
