@@ -50,17 +50,36 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).not_to include("YummyGuideAdministrateStickyTableHeaders")
     expect(javascript_source).not_to include("scheduleStickyRefresh")
     expect(javascript_source).not_to include("table-fixed-header__table")
-    expect(javascript_source).to include("refreshStickyLeftColumnsForWidth(pendingWidth)")
+    expect(javascript_source).to include("refreshTableWidthLayout(table, {")
+    expect(javascript_source).not_to include("refreshStickyLeftColumnsForWidth")
   end
 
   # ドラッグ中は実テーブルを再レイアウトせず、プレビューだけを更新することを静的に確認する
   it "updates only the lightweight preview while dragging" do
-    expect(javascript_source).to include("createDragPreview(sourceTable, previewHeader, startWidth)")
+    expect(javascript_source).to include("createDragPreview(sourceTable, previewHeader, startWidth, previewHeaderRect)")
     expect(javascript_source).to include("updateDragPreview(dragState.preview, dragState.currentWidth)")
     expect(javascript_source).to include("schedulePendingWidthApply(pendingWidth)")
     expect(javascript_source).to include("applyColumnWidth(pendingWidth.columnId, pendingWidth.width, pendingWidth.storageScope)")
     expect(javascript_source).to include("sourceTable: dragState.sourceTable")
     expect(javascript_source).not_to include("applyColumnWidth(dragState.columnId, dragState.currentWidth")
+  end
+
+  # ドラッグ開始時はヘッダー矩形と幅の計測結果を再利用し、プレビュー表示までの同期計測を減らすことを静的に確認する
+  it "reuses resize handle measurements when starting a drag" do
+    expect(javascript_source).to include("function resizeTargetFromEvent(event)")
+    expect(javascript_source).to include("var handleRect = target.rect")
+    expect(javascript_source).to include("var handleHeaderWidth = preciseNumber(handleRect.width || header.offsetWidth || 0)")
+    expect(javascript_source).to include("var sourceHeaderWidth = sourceHeader === header ? handleHeaderWidth : measuredWidth(sourceHeader)")
+    expect(javascript_source).to include("var previewHeaderRect = previewHeader === header ? handleRect : null")
+  end
+
+  # 幅確定時は待ち時間を増やさず、1回のrequestAnimationFrameで適用することを静的に確認する
+  it "applies the pending width on the next animation frame" do
+    expect(javascript_source).to include("function schedulePendingWidthApply(pendingWidth)")
+    expect(javascript_source).to include("widthApplyFrame = window.requestAnimationFrame(function()")
+    expect(javascript_source).to include("widthApplyFrame = null")
+    expect(javascript_source).to include("applyPendingWidth(pendingWidth)")
+    expect(javascript_source).not_to match(/widthApplyFrame = window\.requestAnimationFrame\(function\(\) \{[\s\S]*?widthApplyFrame = window\.requestAnimationFrame/)
   end
 
   # ハンドルのクリックやダブルクリックで、ドラッグ完了扱いの幅適用が予約されないことを静的に確認する
@@ -238,8 +257,26 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).to include("mainContent.style.removeProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE)")
     expect(javascript_source).not_to include("new ResizeObserver(function()")
     expect(javascript_source).to include("refreshStickyHeaderLayoutForTable(table)")
-    expect(javascript_source).to include("refreshStickyHeaderLayoutForTable(pendingWidth.sourceTable)")
+    expect(javascript_source).to include("refreshTableWidthLayout(table")
+    expect(javascript_source).not_to include("refreshStickyHeaderLayoutForTable(pendingWidth.sourceTable)")
     expect(javascript_source).to include("refreshStickyHeaderLayout: refreshStickyHeaderLayout")
+  end
+
+  # window resize中は再計算を連続実行せず、最後のresizeから0.5秒後に反映することを静的に確認する
+  it "debounces sticky header refreshes after window resize" do
+    expect(javascript_source).to include("WINDOW_RESIZE_REFRESH_DELAY = 500")
+    expect(javascript_source).to include("var resizeRefreshTimer = null")
+    expect(javascript_source).to include("function scheduleWindowResizeRefresh()")
+    expect(javascript_source).to include("window.clearTimeout(resizeRefreshTimer)")
+    expect(javascript_source).to include("window.setTimeout(function()")
+    expect(javascript_source).to include("var stickyTableMainContents = new Set()")
+    expect(javascript_source).to include("function refreshTrackedStickyHeaderLayout()")
+    expect(javascript_source).to include("trackStickyTable(table)")
+    expect(javascript_source).to include("refreshTrackedStickyHeaderLayout()")
+    expect(javascript_source).to include("}, WINDOW_RESIZE_REFRESH_DELAY)")
+    expect(javascript_source).to include("window.addEventListener('resize', scheduleWindowResizeRefresh)")
+    expect(javascript_source).not_to include("refreshStickyHeaderLayout(document)")
+    expect(javascript_source).not_to include("window.addEventListener('resize', function() {\n    refreshStickyHeaderLayout(document);\n  });")
   end
 
   # 固定ナビがテーブルより前面の不透明なスクロール領域として表示されることを静的に確認する

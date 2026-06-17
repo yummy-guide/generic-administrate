@@ -18,6 +18,7 @@
   var DESKTOP_GUTTER_RIGHT = 8;
   var COARSE_GUTTER_LEFT = 28;
   var COARSE_GUTTER_RIGHT = 8;
+  var WINDOW_RESIZE_REFRESH_DELAY = 500;
 
   var dragState = null;
   var dragPreviewFrame = null;
@@ -25,8 +26,10 @@
   var pendingWidthApply = null;
   var tableStates = new WeakMap();
   var stickyPageHeaderLayoutFrames = new WeakMap();
+  var stickyTableMainContents = new Set();
   var applyingWidth = false;
   var resizeEventsInitialized = false;
+  var resizeRefreshTimer = null;
 
   function storageScopeForTable(table) {
     var scope = table && table.getAttribute('data-column-resizer-storage-scope');
@@ -104,6 +107,16 @@
     return mainContents;
   }
 
+  function trackStickyTableMainContent(mainContent) {
+    if (mainContent && hasCssStickyTable(mainContent)) {
+      stickyTableMainContents.add(mainContent);
+    }
+  }
+
+  function trackStickyTable(table) {
+    trackStickyTableMainContent(closestMainContent(table));
+  }
+
   function stickyPageHeader(mainContent) {
     if (!mainContent) return null;
 
@@ -175,6 +188,28 @@
     var refreshed = false;
 
     collectStickyTableMainContents(root || document).forEach(function(mainContent) {
+      trackStickyTableMainContent(mainContent);
+      refreshed = refreshStickyPageHeaderLayout(mainContent) || refreshed;
+    });
+
+    return refreshed;
+  }
+
+  function refreshTrackedStickyHeaderLayout() {
+    var refreshed = false;
+
+    stickyTableMainContents.forEach(function(mainContent) {
+      if (!mainContent || !document.documentElement.contains(mainContent)) {
+        stickyTableMainContents.delete(mainContent);
+        return;
+      }
+
+      if (!hasCssStickyTable(mainContent)) {
+        mainContent.style.removeProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE);
+        stickyTableMainContents.delete(mainContent);
+        return;
+      }
+
       refreshed = refreshStickyPageHeaderLayout(mainContent) || refreshed;
     });
 
@@ -188,6 +223,17 @@
 
     scheduleStickyPageHeaderLayout(mainContent);
     return true;
+  }
+
+  function scheduleWindowResizeRefresh() {
+    if (resizeRefreshTimer) {
+      window.clearTimeout(resizeRefreshTimer);
+    }
+
+    resizeRefreshTimer = window.setTimeout(function() {
+      resizeRefreshTimer = null;
+      refreshTrackedStickyHeaderLayout();
+    }, WINDOW_RESIZE_REFRESH_DELAY);
   }
 
   function viewportHeight() {
@@ -305,6 +351,7 @@
       indexByColumnId: indexByColumnId
     };
     tableStates.set(table, state);
+    trackStickyTable(table);
 
     return state;
   }
@@ -374,7 +421,7 @@
     table.style.setProperty(columnWidthVariable(index), effectiveColumnWidthValue(index, !!defaultColumnWidthValue(table, index)));
     setAdjustedColumn(table, index, true);
     applyColgroupWidth(table, state.columnCount, index, widthValue);
-    refreshCssStickyLeftColumns(table);
+    return true;
   }
 
   function clearTableColumnWidth(table, columnId) {
@@ -395,7 +442,7 @@
       clearColgroupWidth(table, state.columnCount, index);
     }
 
-    refreshCssStickyLeftColumns(table);
+    return true;
   }
 
   function stickyColumnIndexes(table, className) {
@@ -456,21 +503,51 @@
     refreshCssStickyLeftColumnSet(table, 'sticky-left-mobile', '--sticky-mobile-left', '--sticky-mobile-width');
   }
 
+  function refreshExternalStickyLeftColumns(table, options) {
+    var api = window.YummyGuideAdministrateStickyLeftColumns;
+    var settings = options || {};
+
+    if (!api) return false;
+
+    if (settings.columnId && typeof api.refreshColumnWidth === 'function') {
+      return api.refreshColumnWidth({
+        sourceTable: table,
+        columnId: settings.columnId,
+        width: settings.width
+      });
+    }
+
+    if (typeof api.refreshTable === 'function') {
+      return api.refreshTable(table);
+    }
+
+    return false;
+  }
+
+  function refreshTableWidthLayout(table, options) {
+    refreshCssStickyLeftColumns(table);
+    refreshExternalStickyLeftColumns(table, options);
+    refreshStickyHeaderLayoutForTable(table);
+  }
+
   function applyColumnWidth(columnId, width, scope) {
     allTrackedTables().forEach(function(table) {
       if (scope && storageScopeForTable(table) !== scope) return;
+      if (!applyTableColumnWidth(table, columnId, width)) return;
 
-      applyTableColumnWidth(table, columnId, width);
-      refreshStickyHeaderLayoutForTable(table);
+      refreshTableWidthLayout(table, {
+        columnId: columnId,
+        width: width
+      });
     });
   }
 
   function clearColumnWidth(columnId, scope) {
     allTrackedTables().forEach(function(table) {
       if (scope && storageScopeForTable(table) !== scope) return;
+      if (!clearTableColumnWidth(table, columnId)) return;
 
-      clearTableColumnWidth(table, columnId);
-      refreshStickyHeaderLayoutForTable(table);
+      refreshTableWidthLayout(table);
     });
   }
 
@@ -480,22 +557,22 @@
     return table && table.getAttribute('aria-hidden') !== 'true' ? table : null;
   }
 
-  function previewBoundsForTable(table, header) {
-    var headerRect = header.getBoundingClientRect();
+  function previewBoundsForTable(table, header, headerRect) {
+    var resolvedHeaderRect = headerRect || header.getBoundingClientRect();
     var tableRect = table.getBoundingClientRect();
     var scrollContainer = table.closest('.sticky-table-scroll, .scroll-table, .home-table__wrapper');
     var scrollRect = scrollContainer ? scrollContainer.getBoundingClientRect() : tableRect;
     var viewportBottom = viewportHeight();
     var top = Math.max(tableRect.top, scrollRect.top);
-    var bottom = Math.min(viewportBottom, Math.max(tableRect.bottom, scrollRect.bottom, headerRect.bottom));
+    var bottom = Math.min(viewportBottom, Math.max(tableRect.bottom, scrollRect.bottom, resolvedHeaderRect.bottom));
 
     top = Math.max(0, Math.min(top, viewportBottom));
     if (bottom <= top) {
-      bottom = Math.min(viewportBottom, top + Math.max(headerRect.height, 32));
+      bottom = Math.min(viewportBottom, top + Math.max(resolvedHeaderRect.height, 32));
     }
 
     return {
-      left: headerRect.left,
+      left: resolvedHeaderRect.left,
       top: top,
       height: Math.max(32, bottom - top)
     };
@@ -511,8 +588,8 @@
     preview.element.style.width = cssPixelValue(width);
   }
 
-  function createDragPreview(table, header, width) {
-    var bounds = previewBoundsForTable(table, header);
+  function createDragPreview(table, header, width, headerRect) {
+    var bounds = previewBoundsForTable(table, header, headerRect);
     var element = document.createElement('div');
 
     element.className = PREVIEW_CLASS;
@@ -627,34 +704,6 @@
     });
   }
 
-  function refreshStickyLeftColumns(sourceTable) {
-    refreshStickyHeaderLayoutForTable(sourceTable);
-
-    var api = window.YummyGuideAdministrateStickyLeftColumns;
-
-    if (api && typeof api.refreshTable === 'function') {
-      api.refreshTable(sourceTable);
-    }
-  }
-
-  function refreshStickyLeftColumnsForWidth(pendingWidth) {
-    var api = window.YummyGuideAdministrateStickyLeftColumns;
-
-    if (!api) return;
-
-    if (typeof api.refreshColumnWidth === 'function') {
-      var refreshed = api.refreshColumnWidth({
-        sourceTable: pendingWidth.sourceTable,
-        columnId: pendingWidth.columnId,
-        width: pendingWidth.width
-      });
-
-      if (refreshed) return;
-    }
-
-    refreshStickyLeftColumns(pendingWidth.sourceTable);
-  }
-
   function startApplyingWidth() {
     applyingWidth = true;
     document.body.classList.add(APPLYING_BODY_CLASS);
@@ -736,8 +785,6 @@
     try {
       applyColumnWidth(pendingWidth.columnId, pendingWidth.width, pendingWidth.storageScope);
       persistColumnWidth(pendingWidth.storageScope, pendingWidth.columnId, pendingWidth.width);
-      refreshStickyLeftColumnsForWidth(pendingWidth);
-      refreshStickyHeaderLayoutForTable(pendingWidth.sourceTable);
       window.requestAnimationFrame(function() {
         stopApplyingWidth(pendingWidth.preview);
       });
@@ -752,10 +799,8 @@
     startApplyingWidth();
 
     widthApplyFrame = window.requestAnimationFrame(function() {
-      widthApplyFrame = window.requestAnimationFrame(function() {
-        widthApplyFrame = null;
-        applyPendingWidth(pendingWidth);
-      });
+      widthApplyFrame = null;
+      applyPendingWidth(pendingWidth);
     });
   }
 
@@ -768,30 +813,43 @@
     };
   }
 
-  function eventInResizeGutter(event, header) {
-    if (!event || !header) return false;
+  function eventInResizeGutter(event, rect) {
+    if (!event || !rect) return false;
 
-    var rect = header.getBoundingClientRect();
     var gutter = resizeGutterWidths();
 
     return event.clientX >= rect.right - gutter.left && event.clientX <= rect.right + gutter.right;
   }
 
-  function resizeHeaderFromEvent(event) {
+  function resizeTargetFromEvent(event) {
     if (!event.target || !event.target.closest) return null;
 
     var header = event.target.closest(RESIZE_HEADER_SELECTOR);
-    if (!header || !eventInResizeGutter(event, header)) return null;
+    if (!header) return null;
 
-    return header;
+    var rect = header.getBoundingClientRect();
+    if (!eventInResizeGutter(event, rect)) return null;
+
+    return {
+      header: header,
+      rect: rect
+    };
+  }
+
+  function resizeHeaderFromEvent(event) {
+    var target = resizeTargetFromEvent(event);
+
+    return target && target.header;
   }
 
   function startDrag(event) {
     if (!pointerCanStartDrag(event)) return;
     if (applyingWidth || widthApplyFrame) return;
 
-    var header = resizeHeaderFromEvent(event);
-    if (!header) return;
+    var target = resizeTargetFromEvent(event);
+    if (!target) return;
+
+    var header = target.header;
 
     var columnId = headerColumnId(header);
     if (!columnId) return;
@@ -800,11 +858,13 @@
     if (!sourceTable) return;
 
     var sourceHeader = columnHeader(sourceTable, columnId) || header;
-    var sourceHeaderWidth = measuredWidth(sourceHeader);
-    var handleHeaderWidth = measuredWidth(header);
+    var handleRect = target.rect;
+    var handleHeaderWidth = preciseNumber(handleRect.width || header.offsetWidth || 0);
+    var sourceHeaderWidth = sourceHeader === header ? handleHeaderWidth : measuredWidth(sourceHeader);
     var startWidth = sourceHeaderWidth || handleHeaderWidth;
     if (!startWidth) return;
     var previewHeader = sourceHeaderWidth ? sourceHeader : header;
+    var previewHeaderRect = previewHeader === header ? handleRect : null;
 
     event.preventDefault();
     event.stopPropagation();
@@ -819,7 +879,7 @@
       handle: header,
       sourceTable: sourceTable,
       moved: false,
-      preview: createDragPreview(sourceTable, previewHeader, startWidth)
+      preview: createDragPreview(sourceTable, previewHeader, startWidth, previewHeaderRect)
     };
 
     captureDragPointer(header, event);
@@ -881,9 +941,6 @@
     clearPersistedColumnWidth(scope, columnId);
     clearColumnWidth(columnId, scope);
     startApplyingWidth();
-    if (sourceTable) {
-      refreshStickyLeftColumns(sourceTable);
-    }
 
     window.requestAnimationFrame(function() {
       stopApplyingWidth(null);
@@ -925,9 +982,7 @@
   }
 
   document.addEventListener('turbo:load', initializeFromDocument);
-  window.addEventListener('resize', function() {
-    refreshStickyHeaderLayout(document);
-  });
+  window.addEventListener('resize', scheduleWindowResizeRefresh);
 
   window.YummyGuideAdministrateColumnResizer = {
     refreshStickyHeaderLayout: refreshStickyHeaderLayout
