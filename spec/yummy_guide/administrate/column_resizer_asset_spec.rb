@@ -28,6 +28,9 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).to include("setAdjustedColumn(table, index, false)")
     expect(stylesheet_source).to include('[data-admin-column-resizer-adjusted-columns~="#{$index}"]')
     expect(stylesheet_source).to include('[style*="--admin-column-resizer-col-#{$index}:"]')
+    expect(stylesheet_source).to include('> :is(thead, tbody, tfoot) > tr > :nth-child(#{$index})')
+    expect(stylesheet_source).not_to include('[data-admin-column-resizer-adjusted-columns~="#{$index}"] > thead > tr > :nth-child(#{$index})')
+    expect(stylesheet_source).not_to include('[style*="--admin-column-resizer-col-#{$index}:"] > thead > tr > :nth-child(#{$index})')
   end
 
   # 幅調整後の内容が常に折り返される静的CSSがあることを確認する
