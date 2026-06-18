@@ -360,6 +360,10 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).to include("function refreshCssStickyLeftColumns(table)")
     expect(javascript_source).to include("refreshCssStickyLeftColumnSet(table, 'sticky-left', '--sticky-left', '--sticky-width')")
     expect(javascript_source).to include("refreshCssStickyLeftColumnSet(table, 'sticky-left-mobile', '--sticky-mobile-left', '--sticky-mobile-width')")
+    expect(javascript_source).to include("function directCellAt(row, index)")
+    expect(javascript_source).to include("var cell = row && row.children[index]")
+    expect(javascript_source).to include("var cell = directCellAt(row, index)")
+    expect(javascript_source).not_to include("var cell = directCells(row)[index]")
     expect(javascript_source).to include("cell.style.setProperty(leftVariable, cssPixelValue(left))")
     expect(javascript_source).to include("refreshCssStickyLeftColumns(table)")
   end

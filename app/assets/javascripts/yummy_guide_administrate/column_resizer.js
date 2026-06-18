@@ -508,9 +508,16 @@
       parsedPixelValue(header && header.style && header.style.getPropertyValue(widthVariable));
   }
 
+  function directCellAt(row, index) {
+    var cell = row && row.children[index];
+    if (!cell) return null;
+
+    return cell.tagName === 'TH' || cell.tagName === 'TD' ? cell : null;
+  }
+
   function applyStickyColumnPosition(table, index, leftVariable, left, widthVariable, width) {
     Array.from(table.querySelectorAll('thead tr, tbody tr, tfoot tr')).forEach(function(row) {
-      var cell = directCells(row)[index];
+      var cell = directCellAt(row, index);
       if (!cell) return;
 
       cell.style.setProperty(leftVariable, cssPixelValue(left));
