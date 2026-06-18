@@ -1,6 +1,5 @@
 (function() {
-  var STORAGE_KEY = "yummyGuideAdministrate.navigationWidthPx";
-  var LEGACY_STORAGE_KEYS = ["wowTokyo.adminNavigationWidthPx"];
+  var PREFERENCES_ENDPOINT = "/admin/browser_preferences";
   var WIDTH_VARIABLE = "--admin-navigation-width";
   var NAVIGATION_SELECTOR = ".app-container > .navigation, body.admin-body > aside";
   var HANDLE_CLASS = "admin-navigation-resize-handle";
@@ -30,39 +29,36 @@
     return window.matchMedia(DESKTOP_MEDIA_QUERY).matches;
   }
 
-  function parseStoredWidth(value) {
-    if (!value) return null;
+  function csrfToken() {
+    var tokenElement = document.querySelector('meta[name="csrf-token"]');
 
-    var width = parseFloat(value);
-    return Number.isFinite(width) ? width : null;
+    return tokenElement && tokenElement.getAttribute("content");
   }
 
-  function storedWidthForKey(key) {
-    try {
-      return parseStoredWidth(window.localStorage.getItem(key));
-    } catch (_error) {
-      return null;
-    }
-  }
+  function persistWidth(width) {
+    var headers = {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    };
+    var token = csrfToken();
 
-  function readStoredWidth() {
-    var width = storedWidthForKey(STORAGE_KEY);
-    if (width !== null) return width;
-
-    for (var index = 0; index < LEGACY_STORAGE_KEYS.length; index += 1) {
-      width = storedWidthForKey(LEGACY_STORAGE_KEYS[index]);
-      if (width !== null) return width;
+    if (token) {
+      headers["X-CSRF-Token"] = token;
     }
 
-    return null;
-  }
-
-  function saveWidth(width) {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, Math.round(width) + "px");
-    } catch (_error) {
-      // localStorage may be unavailable in private browsing or restricted contexts.
-    }
+    window.fetch(PREFERENCES_ENDPOINT, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: headers,
+      body: JSON.stringify({
+        preference: "navigation_width",
+        width: Math.round(width)
+      })
+    }).catch(function(error) {
+      if (window.console && window.console.warn) {
+        window.console.warn("Failed to save admin navigation width preference", error);
+      }
+    });
   }
 
   function clampWidth(width) {
@@ -74,13 +70,6 @@
     body.style.setProperty(WIDTH_VARIABLE, Math.round(clampedWidth) + "px");
 
     return clampedWidth;
-  }
-
-  function applyStoredWidth(body) {
-    var storedWidth = readStoredWidth();
-    if (storedWidth === null) return null;
-
-    return applyWidth(storedWidth, body);
   }
 
   function resizeWidthFromPointer(event, body, navigation) {
@@ -202,7 +191,7 @@
         body.classList.remove(RESIZING_BODY_CLASS);
         navigation.classList.remove(RESIZING_NAVIGATION_CLASS);
 
-        if (latestWidth !== null) saveWidth(latestWidth);
+        if (latestWidth !== null) persistWidth(latestWidth);
         latestWidth = null;
       }
 
@@ -216,26 +205,13 @@
     var body = document.querySelector("body.admin-body") || document.body;
     var navigation = document.querySelector(NAVIGATION_SELECTOR);
     var scrollArea = null;
-    var resizeAnimationFrame = null;
 
     if (!body || !navigation || navigation.dataset.resizableNavigationInitialized === "true") return;
 
     navigation.dataset.resizableNavigationInitialized = "true";
-    applyStoredWidth(body);
     scrollArea = setupNavigationScrollArea(navigation);
     setupNavigationTooltips(scrollArea);
     addResizeHandle(body, navigation);
-
-    window.addEventListener("resize", function() {
-      if (resizeAnimationFrame) {
-        window.cancelAnimationFrame(resizeAnimationFrame);
-      }
-
-      resizeAnimationFrame = window.requestAnimationFrame(function() {
-        applyStoredWidth(body);
-        resizeAnimationFrame = null;
-      });
-    });
   }
 
   ready(setupResizableNavigation);

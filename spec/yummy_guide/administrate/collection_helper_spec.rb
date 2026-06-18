@@ -14,8 +14,14 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
       include ERB::Util
       include YummyGuide::Administrate::CollectionHelper
 
+      attr_accessor :admin_browser_column_widths, :request
+
       def url_for(options = nil)
         options
+      end
+
+      def yummy_guide_administrate_admin_browser_column_widths(scope)
+        (admin_browser_column_widths || {}).fetch(scope, {})
       end
     end.new
   end
@@ -38,7 +44,7 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
   end
 
   describe "#yummy_guide_administrate_collection_table_mobile_fixed_columns_count" do
-    # dashboard のモバイル固定列数も表示列数を超えないことを確認する
+    # dashboard のモバイル固定列数は表示列数内かつ最大1列へ制限されることを確認する
     it "caps the mobile fixed column count by the number of visible attributes" do
       dashboard_class = Class.new do
         def self.index_mobile_fixed_columns_count
@@ -50,7 +56,7 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
       page.instance_variable_set(:@dashboard, dashboard_class.new)
       collection_presenter = Struct.new(:attribute_types).new({ id: :integer, name: :string })
 
-      expect(helper_host.yummy_guide_administrate_collection_table_mobile_fixed_columns_count(page: page, collection_presenter: collection_presenter)).to eq(2)
+      expect(helper_host.yummy_guide_administrate_collection_table_mobile_fixed_columns_count(page: page, collection_presenter: collection_presenter)).to eq(1)
     end
   end
 
@@ -76,7 +82,7 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
   end
 
   describe "#yummy_guide_administrate_collection_table_mobile_fixed_columns_count_for_names" do
-    # モバイル固定列数も手動指定した表示列数を超えないことを確認する
+    # モバイル固定列数も手動指定した表示列数内かつ最大1列へ制限されることを確認する
     it "caps the mobile fixed column count by the provided column names" do
       dashboard_class = Class.new do
         def self.index_mobile_fixed_columns_count
@@ -92,7 +98,7 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
           page: page,
           column_names: %i[month start_datetime customer]
         )
-      ).to eq(3)
+      ).to eq(1)
     end
   end
 
@@ -137,6 +143,39 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
       expect(definition.grid_template_columns).to eq("4rem 14rem max-content")
       expect(definition.column_id(:customer)).to eq("reservation.customer")
       expect(definition.actions_column_id).to eq("reservation.actions")
+    end
+
+    # Dashboard のデフォルト幅とブラウザ別の保存幅がCSS変数として同じテーブル定義へ反映されることを確認する
+    it "builds resizable width variables from default and saved column widths" do
+      dashboard_class = Class.new do
+        def self.index_default_column_widths
+          { interview_summary: "800px", memo: :content }
+        end
+      end
+
+      page = Object.new
+      page.instance_variable_set(:@dashboard, dashboard_class.new)
+      collection_presenter = Struct.new(:attribute_types, :resource_name).new(
+        { name: :string, interview_summary: :text, memo: :text },
+        "worker"
+      )
+      helper_host.request = Struct.new(:path).new("/admin/workers")
+      helper_host.admin_browser_column_widths = {
+        "/admin/workers" => { "worker.memo" => 320 }
+      }
+
+      definition = helper_host.yummy_guide_administrate_collection_table_definition(
+        page: page,
+        collection_presenter: collection_presenter,
+        column_names: %i[name interview_summary memo]
+      )
+
+      expect(definition.table_style).to include("--admin-column-resizer-default-col-2: 800px")
+      expect(definition.table_style).to include("--admin-column-resizer-user-col-3: 320px")
+      expect(definition.table_style).to include("--admin-column-resizer-col-2: var(--admin-column-resizer-user-col-2, var(--admin-column-resizer-default-col-2))")
+      expect(definition.table_style).to include("--admin-column-resizer-col-3: var(--admin-column-resizer-user-col-3)")
+      expect(definition.adjusted_column_indexes).to eq([2, 3])
+      expect(definition.colgroup_widths).to eq([nil, "800px", "320px"])
     end
   end
 
@@ -201,8 +240,38 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
       )
 
       expect(sticky_columns.keys).to eq(%i[month start_datetime])
+      expect(sticky_columns[:month][:class]).to include("sticky-left-mobile--last")
       expect(sticky_columns[:start_datetime][:class]).to include("sticky-left--last")
-      expect(sticky_columns[:start_datetime][:class]).to include("sticky-left-mobile--last")
+      expect(sticky_columns[:start_datetime][:class]).not_to include("sticky-left-mobile")
+    end
+
+    # 保存済み列幅が固定列の初期left計算にも反映されることを確認する
+    it "uses saved column widths when calculating sticky offsets" do
+      dashboard_class = Class.new do
+        def self.index_fixed_columns_count
+          2
+        end
+      end
+
+      page = Object.new
+      page.instance_variable_set(:@dashboard, dashboard_class.new)
+      collection_presenter = Struct.new(:attribute_types, :resource_name).new(
+        { id: :integer, customer: :belongs_to, note: :text },
+        "reservation"
+      )
+      helper_host.request = Struct.new(:path).new("/admin/reservations")
+      helper_host.admin_browser_column_widths = {
+        "/admin/reservations" => { "reservation.id" => 120 }
+      }
+
+      definition = helper_host.yummy_guide_administrate_collection_table_definition(
+        page: page,
+        collection_presenter: collection_presenter,
+        column_names: %i[id customer note]
+      )
+
+      expect(definition.sticky_column(:id)[:style]).to include("--sticky-width: 120px")
+      expect(definition.sticky_column(:customer)[:style]).to include("--sticky-left: 120px")
     end
   end
 

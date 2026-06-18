@@ -17,23 +17,32 @@ RSpec.describe "column resizer assets" do
     File.read(File.expand_path("../../../app/assets/stylesheets/yummy_guide_administrate/_resizable_navigation.scss", __dir__))
   end
 
+  let(:resizable_navigation_javascript_source) do
+    File.read(File.expand_path("../../../app/assets/javascripts/yummy_guide_administrate/resizable_navigation.js", __dir__))
+  end
+
   # 未調整列は内容幅で表示され、調整済み列だけが幅固定されることを静的に確認する
   it "scopes fixed width rules to adjusted columns" do
     expect(javascript_source).to include("data-admin-column-resizer-adjusted-columns")
     expect(javascript_source).to include("setAdjustedColumn(table, index, true)")
     expect(javascript_source).to include("setAdjustedColumn(table, index, false)")
-    expect(javascript_source).to include("ADJUSTED_COLUMNS_ATTRIBUTE + '~=\"' + nthChild")
+    expect(stylesheet_source).to include('[data-admin-column-resizer-adjusted-columns~="#{$index}"]')
+    expect(stylesheet_source).to include('[style*="--admin-column-resizer-col-#{$index}:"]')
+    expect(stylesheet_source).to include('> :is(thead, tbody, tfoot) > tr > :nth-child(#{$index})')
+    expect(stylesheet_source).not_to include('[data-admin-column-resizer-adjusted-columns~="#{$index}"] > thead > tr > :nth-child(#{$index})')
+    expect(stylesheet_source).not_to include('[style*="--admin-column-resizer-col-#{$index}:"] > thead > tr > :nth-child(#{$index})')
   end
 
-  # 幅調整後の内容が常に折り返されるCSSが生成されることを確認する
-  it "generates wrapping rules for adjusted columns" do
-    expect(javascript_source).to include("white-space: normal !important")
-    expect(javascript_source).to include("overflow-wrap: anywhere !important")
-    expect(javascript_source).to include("word-break: break-word !important")
+  # 幅調整後の内容が常に折り返される静的CSSがあることを確認する
+  it "defines wrapping rules for adjusted columns" do
+    expect(stylesheet_source).to include("white-space: normal !important")
+    expect(stylesheet_source).to include("overflow-wrap: anywhere !important")
+    expect(stylesheet_source).to include("word-break: break-word !important")
   end
 
   # デフォルト状態の列幅が内容の最大幅を基準に決まることを確認する
   it "uses max-content table sizing by default" do
+    expect(stylesheet_source).to include("table[data-fixed-columns-count]")
     expect(stylesheet_source).to include("table-layout: auto !important")
     expect(stylesheet_source).to include("width: max-content !important")
     expect(stylesheet_source).to include("min-width: 100% !important")
@@ -44,17 +53,64 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).not_to include("YummyGuideAdministrateStickyTableHeaders")
     expect(javascript_source).not_to include("scheduleStickyRefresh")
     expect(javascript_source).not_to include("table-fixed-header__table")
-    expect(javascript_source).to include("refreshStickyLeftColumnsForWidth(pendingWidth)")
+    expect(javascript_source).to include("refreshTableWidthLayout(table, {")
+    expect(javascript_source).not_to include("refreshStickyLeftColumnsForWidth")
   end
 
   # ドラッグ中は実テーブルを再レイアウトせず、プレビューだけを更新することを静的に確認する
   it "updates only the lightweight preview while dragging" do
-    expect(javascript_source).to include("createDragPreview(sourceTable, previewHeader, startWidth)")
+    expect(javascript_source).to include("createDragPreview(sourceTable, previewHeader, startWidth, previewHeaderRect)")
     expect(javascript_source).to include("updateDragPreview(dragState.preview, dragState.currentWidth)")
     expect(javascript_source).to include("schedulePendingWidthApply(pendingWidth)")
-    expect(javascript_source).to include("applyColumnWidth(pendingWidth.columnId, pendingWidth.width, pendingWidth.storageKey)")
+    expect(javascript_source).to include("applyColumnWidth(pendingWidth.columnId, pendingWidth.width, pendingWidth.storageScope)")
     expect(javascript_source).to include("sourceTable: dragState.sourceTable")
     expect(javascript_source).not_to include("applyColumnWidth(dragState.columnId, dragState.currentWidth")
+  end
+
+  # プレビュー表示はブラウザの現在表示範囲へ収め、実際の適用幅は維持することを静的に確認する
+  it "clips the drag preview to the visible viewport width" do
+    expect(javascript_source).to include("function viewportWidth()")
+    expect(javascript_source).to include("var viewportRight = viewportWidth()")
+    expect(javascript_source).to include("var left = Math.max(0, Math.min(headerRect.left, viewportRight))")
+    expect(javascript_source).to include("height: Math.max(32, viewportBottom - top)")
+    expect(javascript_source).to include("hiddenLeft: Math.max(0, left - headerRect.left)")
+    expect(javascript_source).to include("maxWidth: Math.max(0, viewportRight - left)")
+    expect(javascript_source).to include("var visibleWidth = Math.max(0, width - preview.hiddenLeft)")
+    expect(javascript_source).to include("Math.min(visibleWidth, preview.maxWidth)")
+    expect(javascript_source).to include("width: Math.max(MIN_WIDTH, dragState.currentWidth || dragState.startWidth)")
+  end
+
+  # プレビューはヘッダー矩形とviewportだけで表示し、重いテーブル範囲計測を使わないことを静的に確認する
+  it "shows the drag preview without measuring the full table bounds" do
+    expect(javascript_source).to include("function previewBoundsFromHeader(headerRect)")
+    expect(javascript_source).to include("var bounds = previewBoundsFromHeader(resolvedHeaderRect)")
+    expect(javascript_source).to include("applyDragPreviewBounds(preview, bounds)")
+    expect(javascript_source).to include("previewParentForTable(table).appendChild(element)")
+    expect(javascript_source).not_to include("function previewBoundsForTable")
+    expect(javascript_source).not_to include("scheduleDragPreviewBoundsRefresh")
+    expect(javascript_source).not_to include("boundsFrame")
+    expect(javascript_source).not_to include("var tableRect = table.getBoundingClientRect()")
+    expect(javascript_source).not_to include("scrollContainer.getBoundingClientRect()")
+  end
+
+  # ドラッグ開始時はヘッダー矩形と幅の計測結果を再利用し、プレビュー表示までの同期計測を減らすことを静的に確認する
+  it "reuses resize handle measurements when starting a drag" do
+    expect(javascript_source).to include("headers: headers")
+    expect(javascript_source).to include("return state.headers[index] || null")
+    expect(javascript_source).to include("function resizeTargetFromEvent(event)")
+    expect(javascript_source).to include("var handleRect = target.rect")
+    expect(javascript_source).to include("var handleHeaderWidth = preciseNumber(handleRect.width || header.offsetWidth || 0)")
+    expect(javascript_source).to include("var sourceHeaderWidth = sourceHeader === header ? handleHeaderWidth : measuredWidth(sourceHeader)")
+    expect(javascript_source).to include("var previewHeaderRect = previewHeader === header ? handleRect : null")
+  end
+
+  # 幅確定時は待ち時間を増やさず、1回のrequestAnimationFrameで適用することを静的に確認する
+  it "applies the pending width on the next animation frame" do
+    expect(javascript_source).to include("function schedulePendingWidthApply(pendingWidth)")
+    expect(javascript_source).to include("widthApplyFrame = window.requestAnimationFrame(function()")
+    expect(javascript_source).to include("widthApplyFrame = null")
+    expect(javascript_source).to include("applyPendingWidth(pendingWidth)")
+    expect(javascript_source).not_to match(/widthApplyFrame = window\.requestAnimationFrame\(function\(\) \{[\s\S]*?widthApplyFrame = window\.requestAnimationFrame/)
   end
 
   # ハンドルのクリックやダブルクリックで、ドラッグ完了扱いの幅適用が予約されないことを静的に確認する
@@ -94,14 +150,30 @@ RSpec.describe "column resizer assets" do
     expect(stylesheet_source).not_to include("z-index: 20")
   end
 
-  # 幅の適用中だけ待機カーソルを表示することを静的に確認する
+  # ドラッグ開始時に全DOMへ波及するbody classと子孫selectorを使わないことを静的に確認する
+  it "avoids global descendant selectors while dragging a column" do
+    expect(javascript_source).to include("ACTIVE_HEADER_CLASS = 'admin-column-resizer__header--dragging'")
+    expect(javascript_source).to include("function scheduleDragInteraction(header)")
+    expect(javascript_source).to include("dragInteractionTimer = window.setTimeout(function()")
+    expect(javascript_source).to include("header.classList.add(ACTIVE_HEADER_CLASS)")
+    expect(javascript_source).to include("stopDragInteraction(completedDrag.handle)")
+    expect(javascript_source).not_to include("DRAGGING_BODY_CLASS")
+    expect(javascript_source).not_to include("document.body.classList.add(DRAGGING_BODY_CLASS)")
+    expect(stylesheet_source).to include("th.admin-column-resizer__header--dragging::after")
+    expect(stylesheet_source).not_to include(".admin-column-resizer--dragging")
+    expect(stylesheet_source).not_to include(".admin-column-resizer--dragging *")
+  end
+
+  # 幅の適用中だけ待機カーソルを表示し、全DOMへ波及する子孫selectorを使わないことを静的に確認する
   it "shows a wait cursor while applying the final width" do
-    expect(javascript_source).to include("APPLYING_BODY_CLASS = 'admin-column-resizer--applying'")
+    expect(javascript_source).to include("function setInteractionStyle(cursor, userSelect)")
     expect(javascript_source).to include("function startApplyingWidth()")
-    expect(javascript_source).to include("document.body.classList.add(APPLYING_BODY_CLASS)")
-    expect(javascript_source).to include("document.body.classList.remove(APPLYING_BODY_CLASS)")
-    expect(stylesheet_source).to include(".admin-column-resizer--applying")
-    expect(stylesheet_source).to include("cursor: wait !important")
+    expect(javascript_source).to include("setInteractionStyle('wait', 'none')")
+    expect(javascript_source).to include("restoreInteractionStyle()")
+    expect(javascript_source).not_to include("APPLYING_BODY_CLASS")
+    expect(javascript_source).not_to include("document.body.classList.add(APPLYING_BODY_CLASS)")
+    expect(stylesheet_source).not_to include(".admin-column-resizer--applying")
+    expect(stylesheet_source).not_to include(".admin-column-resizer--applying *")
   end
 
   # モバイルのtouch/pen操作でハンドル外へ移動しても調整を継続できることを静的に確認する
@@ -112,6 +184,12 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).to include("dragState.handle.releasePointerCapture(dragState.pointerId)")
     expect(stylesheet_source).to include("right: -14px")
     expect(stylesheet_source).to include("width: 36px")
+  end
+
+  # ドラッグ開始時に解決済みヘッダーから対象テーブルを取得し、未定義変数で停止しないことを静的に確認する
+  it "uses the resolved header when starting a column drag" do
+    expect(javascript_source).to include("var sourceTable = sourceTableForHandle(header)")
+    expect(javascript_source).not_to include("var sourceTable = sourceTableForHandle(handle)")
   end
 
   # CSSだけで固定ヘッダーと固定左列の初期表示に必要なスタイルがあることを静的に確認する
@@ -147,7 +225,7 @@ RSpec.describe "column resizer assets" do
     expect(components_source).to include('table[data-mobile-fixed-columns-count="1"] th.sticky-left-mobile')
     expect(components_source).to include("position: sticky !important")
     expect(components_source).to include("min-inline-size: 0 !important")
-    expect(components_source).to include("width: max-content !important")
+    expect(components_source).to include("width: max-content")
     expect(components_source).to include("@media (max-width: 767px)")
     expect(components_source).to include(".scroll-table table th.sticky.actions-column")
     expect(components_source).to include("right: auto")
@@ -156,13 +234,63 @@ RSpec.describe "column resizer assets" do
     expect(components_source).to include("color: #fff")
     expect(components_source).to include(".scroll-table[data-css-sticky-table] table > thead th a")
     expect(components_source).to include("color: inherit")
-    expect(components_source).to include("z-index: 6")
+    expect(components_source).to include("z-index: 7")
     expect(components_source).to include("top: var(--admin-sticky-table-header-top, 0)")
+    expect(components_source).to include("--admin-sticky-table-left-offset: var(--admin-sticky-page-header-left, 0px)")
     expect(components_source).to include("--admin-sticky-actions-right: var(--admin-layout-inline-padding)")
+    expect(components_source).to include("--admin-sticky-actions-mask-z-index: 6")
     expect(components_source).to include("right: var(--admin-sticky-actions-right, 0px)")
     expect(components_source).to include(".scroll-table table th.sticky.actions-column::after")
     expect(components_source).to include("right: calc(0px - var(--admin-sticky-actions-right, 0px))")
     expect(components_source).to include("width: var(--admin-sticky-actions-right, 0px)")
+  end
+
+  # PC表示ではsticky tableをページ全体スクロールで扱うことを静的に確認する
+  it "expands the main content to the sticky table width on desktop" do
+    expect(components_source).to include("@media screen and (min-width: 768px)")
+    expect(components_source).to include("inline-size: max-content !important")
+    expect(components_source).to include("max-inline-size: none !important")
+    expect(components_source).to include("flex-basis: max-content !important")
+  end
+
+  # PC表示ではactions列より右側に固定マスクを置き、テーブル要素が右余白へ見えないことを静的に確認する
+  it "masks the desktop page area to the right of the actions column" do
+    expect(components_source).to include(".app-container > .main-content:has(> .main-content__body--flush [data-css-sticky-table])::after")
+    expect(components_source).to include("body.admin-body > main.main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table])::after")
+    expect(components_source).to match(/\.app-container > \.main-content:has\(> \.main-content__body--flush \[data-css-sticky-table\]\)::after,[\s\S]*?position: fixed;/)
+    expect(components_source).to match(/\.app-container > \.main-content:has\(> \.main-content__body--flush \[data-css-sticky-table\]\)::after,[\s\S]*?width: var\(--admin-sticky-actions-right, 0px\);/)
+    expect(components_source).to match(/\.app-container > \.main-content:has\(> \.main-content__body--flush \[data-css-sticky-table\]\)::after,[\s\S]*?pointer-events: none;/)
+    expect(components_source).to match(/\.app-container > \.main-content:has\(> \.main-content__body--flush \[data-css-sticky-table\]\)::after,[\s\S]*?z-index: var\(--admin-sticky-actions-mask-z-index, 6\);/)
+  end
+
+  # モバイル表示ではsticky tableをテーブル領域スクロールで扱うことを静的に確認する
+  it "keeps sticky tables scrollable inside the table area on mobile" do
+    expect(components_source).to include("@media screen and (max-width: 767px)")
+    expect(components_source).to include("body :is(.scroll-table, .sticky-table-scroll, .home-table__wrapper, .table-wrap, .af__table__content)[data-css-sticky-table]")
+    expect(components_source).to include("overflow: auto !important")
+  end
+
+  # sticky table内のactions列はページ右paddingに揃えつつ、左端の疑似境界線を出さないことを静的に確認する
+  it "keeps sticky table actions columns aligned without a left divider gap" do
+    expect(components_source).to match(/\.scroll-table\[data-css-sticky-table\] table th\.sticky\.actions-column,[\s\S]*?right: var\(--admin-sticky-actions-right, 0px\);/)
+    expect(components_source).to match(/\.scroll-table\[data-css-sticky-table\] table td\.sticky\.actions-column,[\s\S]*?right: var\(--admin-sticky-actions-right, 0px\);/)
+    expect(components_source).to match(/\.scroll-table\[data-css-sticky-table\] table th\.sticky\.actions-column::before,[\s\S]*?content: none;/)
+  end
+
+  # 固定左列はPCではページ全体スクロール用offsetを使い、モバイルではoffsetを0にすることを静的に確認する
+  it "uses page-scroll sticky-left offsets on desktop and zero offsets on mobile" do
+    expect(components_source).to include("--admin-sticky-table-left-offset: var(--admin-sticky-page-header-left, 0px)")
+    expect(components_source).to include("--admin-sticky-table-left-offset: 0px")
+    expect(components_source).to match(/\.scroll-table\[data-css-sticky-table\] table th\.sticky-left,[\s\S]*?left: calc\(var\(--admin-sticky-table-left-offset, 0px\) \+ var\(--sticky-left, 0px\)\);/)
+    expect(components_source).to match(/table\[data-mobile-fixed-columns-count\] td\.sticky-left-mobile,[\s\S]*?left: calc\(var\(--admin-sticky-table-left-offset, 0px\) \+ var\(--sticky-mobile-left, 0px\)\);/)
+  end
+
+  # カラム幅調整ハンドルのCSSが固定ヘッダーのposition: stickyを上書きしないことを静的に確認する
+  it "does not override sticky header positioning for resize handles" do
+    expect(stylesheet_source).not_to match(/th\[data-column-id\][^{]*\{\s*position:\s*relative;/)
+    expect(stylesheet_source).not_to match(/th\[data-admin-column-resizer-column-id\][^{]*\{\s*position:\s*relative;/)
+    expect(stylesheet_source).to include("th[data-column-id]::before")
+    expect(stylesheet_source).to include("th[data-admin-column-resizer-column-id]::before")
   end
 
   # 固定ページヘッダーの実高さをCSS変数へ反映し、テーブルヘッダー位置を追従させることを静的に確認する
@@ -174,10 +302,28 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).to include("header.scrollHeight || 0")
     expect(javascript_source).to include("mainContent.style.setProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE, value)")
     expect(javascript_source).to include("mainContent.style.removeProperty(STICKY_PAGE_HEADER_HEIGHT_VARIABLE)")
-    expect(javascript_source).to include("new ResizeObserver(function()")
+    expect(javascript_source).not_to include("new ResizeObserver(function()")
     expect(javascript_source).to include("refreshStickyHeaderLayoutForTable(table)")
-    expect(javascript_source).to include("refreshStickyHeaderLayoutForTable(pendingWidth.sourceTable)")
+    expect(javascript_source).to include("refreshTableWidthLayout(table")
+    expect(javascript_source).not_to include("refreshStickyHeaderLayoutForTable(pendingWidth.sourceTable)")
     expect(javascript_source).to include("refreshStickyHeaderLayout: refreshStickyHeaderLayout")
+  end
+
+  # window resize中は再計算を連続実行せず、最後のresizeから0.5秒後に反映することを静的に確認する
+  it "debounces sticky header refreshes after window resize" do
+    expect(javascript_source).to include("WINDOW_RESIZE_REFRESH_DELAY = 500")
+    expect(javascript_source).to include("var resizeRefreshTimer = null")
+    expect(javascript_source).to include("function scheduleWindowResizeRefresh()")
+    expect(javascript_source).to include("window.clearTimeout(resizeRefreshTimer)")
+    expect(javascript_source).to include("window.setTimeout(function()")
+    expect(javascript_source).to include("var stickyTableMainContents = new Set()")
+    expect(javascript_source).to include("function refreshTrackedStickyHeaderLayout()")
+    expect(javascript_source).to include("trackStickyTable(table)")
+    expect(javascript_source).to include("refreshTrackedStickyHeaderLayout()")
+    expect(javascript_source).to include("}, WINDOW_RESIZE_REFRESH_DELAY)")
+    expect(javascript_source).to include("window.addEventListener('resize', scheduleWindowResizeRefresh)")
+    expect(javascript_source).not_to include("refreshStickyHeaderLayout(document)")
+    expect(javascript_source).not_to include("window.addEventListener('resize', function() {\n    refreshStickyHeaderLayout(document);\n  });")
   end
 
   # 固定ナビがテーブルより前面の不透明なスクロール領域として表示されることを静的に確認する
@@ -217,6 +363,10 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).to include("function refreshCssStickyLeftColumns(table)")
     expect(javascript_source).to include("refreshCssStickyLeftColumnSet(table, 'sticky-left', '--sticky-left', '--sticky-width')")
     expect(javascript_source).to include("refreshCssStickyLeftColumnSet(table, 'sticky-left-mobile', '--sticky-mobile-left', '--sticky-mobile-width')")
+    expect(javascript_source).to include("function directCellAt(row, index)")
+    expect(javascript_source).to include("var cell = row && row.children[index]")
+    expect(javascript_source).to include("var cell = directCellAt(row, index)")
+    expect(javascript_source).not_to include("var cell = directCells(row)[index]")
     expect(javascript_source).to include("cell.style.setProperty(leftVariable, cssPixelValue(left))")
     expect(javascript_source).to include("refreshCssStickyLeftColumns(table)")
   end
@@ -240,8 +390,60 @@ RSpec.describe "column resizer assets" do
 
   # 幅リセット時も固定列のCSS変数を再計算することを静的に確認する
   it "recalculates CSS sticky-left offsets after clearing a column width" do
-    expect(javascript_source).to include("clearColumnWidth(columnId, key)")
+    expect(javascript_source).to include("clearColumnWidth(columnId, scope)")
     expect(javascript_source).to include("clearTableColumnWidth(table, columnId)")
     expect(javascript_source).to include("refreshCssStickyLeftColumns(table)")
+  end
+
+  # カラム幅の初期同期と保存にlocalStorageを使わず、サーバーへのPATCHだけを使うことを確認する
+  it "persists column widths through browser preferences instead of localStorage" do
+    expect(javascript_source).to include("PREFERENCES_ENDPOINT = '/admin/browser_preferences'")
+    expect(javascript_source).to include("window.fetch(PREFERENCES_ENDPOINT")
+    expect(javascript_source).to include("preference: 'column_width'")
+    expect(javascript_source).to include("scope: scope")
+    expect(javascript_source).to include("column_id: columnId")
+    expect(javascript_source).not_to include("localStorage")
+    expect(javascript_source).not_to include("applyStoredWidthsToTables")
+  end
+
+  # サーバー側デフォルト幅はユーザー幅のfallbackとしてCSS変数に残り、リセット時に復帰できることを確認する
+  it "keeps server default widths as CSS variable fallbacks" do
+    expect(javascript_source).to include("DEFAULT_WIDTH_VAR_PREFIX = '--admin-column-resizer-default-col-'")
+    expect(javascript_source).to include("USER_WIDTH_VAR_PREFIX = '--admin-column-resizer-user-col-'")
+    expect(javascript_source).to include("defaultColumnWidthValue(table, index)")
+    expect(javascript_source).to include("effectiveColumnWidthValue(index, true)")
+    expect(javascript_source).to include("table.style.removeProperty(userColumnWidthVariable(index))")
+    expect(javascript_source).not_to include("initializeAdjustedColumnWidths")
+  end
+
+  # 未調整のコピーセルは内容とコピーアイコンを1行で収める幅を自然幅として使うことを確認する
+  it "keeps copy cells on one line until a column width is adjusted" do
+    expect(components_source).to include("display: inline-flex")
+    expect(components_source).to include("width: max-content")
+    expect(components_source).to include("min-width: max-content")
+    expect(components_source).to include("white-space: nowrap")
+    expect(stylesheet_source).to include("> .admin-copy-cell")
+    expect(stylesheet_source).to include("width: 100% !important")
+    expect(stylesheet_source).to include("flex: 1 1 auto !important")
+  end
+
+  # 初回ロード時のJSはテーブルDOMを書き換えず、ヘッダー高さだけを測定反映することを静的に確認する
+  it "does not mutate table DOM during initial column resizer setup" do
+    expect(javascript_source).not_to include("table.classList.add")
+    expect(javascript_source).not_to include("document.createElement('span')")
+    expect(javascript_source).not_to include("appendChild(handle)")
+    expect(javascript_source).not_to include("ensureColumnRules")
+    expect(javascript_source).not_to include("setTimeout(initializeFromDocument")
+    expect(javascript_source).to include("tablesFromRoot(root).forEach(configureTable)")
+    expect(javascript_source).to include("refreshStickyHeaderLayout(root)")
+  end
+
+  # ナビゲーション幅もlocalStorageではなくブラウザ別設定へ保存することを確認する
+  it "persists navigation widths through browser preferences instead of localStorage" do
+    expect(resizable_navigation_javascript_source).to include('PREFERENCES_ENDPOINT = "/admin/browser_preferences"')
+    expect(resizable_navigation_javascript_source).to include("window.fetch(PREFERENCES_ENDPOINT")
+    expect(resizable_navigation_javascript_source).to include('preference: "navigation_width"')
+    expect(resizable_navigation_javascript_source).to include("persistWidth(latestWidth)")
+    expect(resizable_navigation_javascript_source).not_to include("localStorage")
   end
 end

@@ -23,6 +23,7 @@
     --admin-sticky-page-header-left: calc(var(--admin-layout-inline-padding) + var(--admin-navigation-effective-width) + var(--admin-layout-gap));
     --admin-sticky-page-header-z-index: 15;
     --admin-sticky-actions-right: var(--admin-layout-inline-padding);
+    --admin-sticky-actions-mask-z-index: 6;
     align-items: flex-start;
     gap: var(--admin-layout-gap);
     min-height: 100vh;
@@ -50,6 +51,7 @@
     --admin-sticky-page-header-left: calc(var(--admin-layout-inline-padding) + var(--admin-navigation-effective-width) + var(--admin-layout-gap));
     --admin-sticky-page-header-z-index: 15;
     --admin-sticky-actions-right: var(--admin-layout-inline-padding);
+    --admin-sticky-actions-mask-z-index: 6;
   }
 
   .app-container > .navigation {
@@ -344,15 +346,17 @@
 
 .admin-copy-cell {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  width: 100%;
+  width: max-content;
+  max-width: none;
 }
 
 .admin-copy-cell__content {
-  min-width: 0;
-  flex: 1 1 auto;
+  min-width: max-content;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .admin-copy-cell__content-link {
@@ -854,16 +858,22 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
 }
 
 .scroll-table[data-css-sticky-table] table th.sticky.actions-column,
-.home-table__wrapper[data-css-sticky-table] table th.sticky.actions-column {
+.sticky-table-scroll[data-css-sticky-table] table th.sticky.actions-column,
+.home-table__wrapper[data-css-sticky-table] table th.sticky.actions-column,
+.table-wrap[data-css-sticky-table] table th.sticky.actions-column,
+.af__table__content[data-css-sticky-table] table th.sticky.actions-column {
   position: sticky;
   top: var(--admin-sticky-table-header-top, 0);
   right: var(--admin-sticky-actions-right, 0px);
-  z-index: 6;
+  z-index: 7;
   background-color: #121012;
 }
 
 .scroll-table[data-css-sticky-table] table td.sticky.actions-column,
-.home-table__wrapper[data-css-sticky-table] table td.sticky.actions-column {
+.sticky-table-scroll[data-css-sticky-table] table td.sticky.actions-column,
+.home-table__wrapper[data-css-sticky-table] table td.sticky.actions-column,
+.table-wrap[data-css-sticky-table] table td.sticky.actions-column,
+.af__table__content[data-css-sticky-table] table td.sticky.actions-column {
   position: sticky;
   right: var(--admin-sticky-actions-right, 0px);
   z-index: 4;
@@ -901,6 +911,20 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
   right: calc(0px - var(--admin-sticky-actions-right, 0px));
   top: -1px;
   width: var(--admin-sticky-actions-right, 0px);
+}
+
+.scroll-table[data-css-sticky-table] table th.sticky.actions-column::before,
+.scroll-table[data-css-sticky-table] table td.sticky.actions-column::before,
+.sticky-table-scroll[data-css-sticky-table] table th.sticky.actions-column::before,
+.sticky-table-scroll[data-css-sticky-table] table td.sticky.actions-column::before,
+.home-table__wrapper[data-css-sticky-table] table th.sticky.actions-column::before,
+.home-table__wrapper[data-css-sticky-table] table td.sticky.actions-column::before,
+.table-wrap[data-css-sticky-table] table th.sticky.actions-column::before,
+.table-wrap[data-css-sticky-table] table td.sticky.actions-column::before,
+.af__table__content[data-css-sticky-table] table th.sticky.actions-column::before,
+.af__table__content[data-css-sticky-table] table td.sticky.actions-column::before {
+  content: none;
+  display: none;
 }
 
 .scroll-table table td.sticky,
@@ -1174,6 +1198,21 @@ td.actions-column .sticky__item,
     min-inline-size: calc(100vw - var(--admin-sticky-page-header-left, var(--admin-main-left-offset, 0px)) - var(--admin-layout-inline-padding, 0px)) !important;
     min-width: calc(100vw - var(--admin-sticky-page-header-left, var(--admin-main-left-offset, 0px)) - var(--admin-layout-inline-padding, 0px)) !important;
     width: max-content !important;
+  }
+
+  .app-container > .main-content:has(> .main-content__body--flush [data-css-sticky-table])::after,
+  .app-container > .main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table])::after,
+  body.admin-body > main.main-content:has(> .main-content__body--flush [data-css-sticky-table])::after,
+  body.admin-body > main.main-content:has(> [data-reservations-sticky-body] [data-css-sticky-table])::after {
+    background: var(--admin-page-background, #f6f7f7);
+    bottom: 0;
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: var(--admin-sticky-actions-right, 0px);
+    z-index: var(--admin-sticky-actions-mask-z-index, 6);
   }
 
   .app-container > .main-content:has(> .main-content__body--flush [data-css-sticky-table]),
