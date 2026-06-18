@@ -147,14 +147,30 @@ RSpec.describe "column resizer assets" do
     expect(stylesheet_source).not_to include("z-index: 20")
   end
 
-  # 幅の適用中だけ待機カーソルを表示することを静的に確認する
+  # ドラッグ開始時に全DOMへ波及するbody classと子孫selectorを使わないことを静的に確認する
+  it "avoids global descendant selectors while dragging a column" do
+    expect(javascript_source).to include("ACTIVE_HEADER_CLASS = 'admin-column-resizer__header--dragging'")
+    expect(javascript_source).to include("function scheduleDragInteraction(header)")
+    expect(javascript_source).to include("dragInteractionTimer = window.setTimeout(function()")
+    expect(javascript_source).to include("header.classList.add(ACTIVE_HEADER_CLASS)")
+    expect(javascript_source).to include("stopDragInteraction(completedDrag.handle)")
+    expect(javascript_source).not_to include("DRAGGING_BODY_CLASS")
+    expect(javascript_source).not_to include("document.body.classList.add(DRAGGING_BODY_CLASS)")
+    expect(stylesheet_source).to include("th.admin-column-resizer__header--dragging::after")
+    expect(stylesheet_source).not_to include(".admin-column-resizer--dragging")
+    expect(stylesheet_source).not_to include(".admin-column-resizer--dragging *")
+  end
+
+  # 幅の適用中だけ待機カーソルを表示し、全DOMへ波及する子孫selectorを使わないことを静的に確認する
   it "shows a wait cursor while applying the final width" do
-    expect(javascript_source).to include("APPLYING_BODY_CLASS = 'admin-column-resizer--applying'")
+    expect(javascript_source).to include("function setInteractionStyle(cursor, userSelect)")
     expect(javascript_source).to include("function startApplyingWidth()")
-    expect(javascript_source).to include("document.body.classList.add(APPLYING_BODY_CLASS)")
-    expect(javascript_source).to include("document.body.classList.remove(APPLYING_BODY_CLASS)")
-    expect(stylesheet_source).to include(".admin-column-resizer--applying")
-    expect(stylesheet_source).to include("cursor: wait !important")
+    expect(javascript_source).to include("setInteractionStyle('wait', 'none')")
+    expect(javascript_source).to include("restoreInteractionStyle()")
+    expect(javascript_source).not_to include("APPLYING_BODY_CLASS")
+    expect(javascript_source).not_to include("document.body.classList.add(APPLYING_BODY_CLASS)")
+    expect(stylesheet_source).not_to include(".admin-column-resizer--applying")
+    expect(stylesheet_source).not_to include(".admin-column-resizer--applying *")
   end
 
   # モバイルのtouch/pen操作でハンドル外へ移動しても調整を継続できることを静的に確認する

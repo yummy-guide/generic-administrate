@@ -5,8 +5,7 @@
   var STICKY_PAGE_HEADER_SELECTOR = '.main-content__header--sticky-table-layout, [data-reservations-sticky-header], .main-content__header';
   var STICKY_PAGE_HEADER_HEIGHT_VARIABLE = '--admin-sticky-page-header-height';
   var RESIZE_HEADER_SELECTOR = 'th[data-admin-column-resizer-column-id], th[data-column-id]';
-  var DRAGGING_BODY_CLASS = 'admin-column-resizer--dragging';
-  var APPLYING_BODY_CLASS = 'admin-column-resizer--applying';
+  var ACTIVE_HEADER_CLASS = 'admin-column-resizer__header--dragging';
   var PREVIEW_CLASS = 'admin-column-resizer__preview';
   var ADJUSTED_COLUMNS_ATTRIBUTE = 'data-admin-column-resizer-adjusted-columns';
   var PREFERENCES_ENDPOINT = '/admin/browser_preferences';
@@ -30,6 +29,8 @@
   var applyingWidth = false;
   var resizeEventsInitialized = false;
   var resizeRefreshTimer = null;
+  var rootInteractionStyle = null;
+  var dragInteractionTimer = null;
 
   function storageScopeForTable(table) {
     var scope = table && table.getAttribute('data-column-resizer-storage-scope');
@@ -48,6 +49,45 @@
   function parsedPixelValue(value) {
     var parsedValue = parseFloat(value || '0');
     return Number.isNaN(parsedValue) ? 0 : preciseNumber(parsedValue);
+  }
+
+  function setInteractionStyle(cursor, userSelect) {
+    var root = document.documentElement;
+    var body = document.body;
+
+    if (!rootInteractionStyle) {
+      rootInteractionStyle = {
+        rootCursor: root.style.cursor,
+        rootUserSelect: root.style.userSelect,
+        bodyCursor: body ? body.style.cursor : '',
+        bodyUserSelect: body ? body.style.userSelect : ''
+      };
+    }
+
+    root.style.cursor = cursor;
+    root.style.userSelect = userSelect;
+
+    if (body) {
+      body.style.cursor = cursor;
+      body.style.userSelect = userSelect;
+    }
+  }
+
+  function restoreInteractionStyle() {
+    var root = document.documentElement;
+    var body = document.body;
+
+    if (!rootInteractionStyle) return;
+
+    root.style.cursor = rootInteractionStyle.rootCursor;
+    root.style.userSelect = rootInteractionStyle.rootUserSelect;
+
+    if (body) {
+      body.style.cursor = rootInteractionStyle.bodyCursor;
+      body.style.userSelect = rootInteractionStyle.bodyUserSelect;
+    }
+
+    rootInteractionStyle = null;
   }
 
   function measuredWidth(element) {
@@ -674,6 +714,41 @@
     return event.pointerType !== 'mouse' || event.button === 0;
   }
 
+  function activateDragInteraction(header) {
+    if (header && header.classList) {
+      header.classList.add(ACTIVE_HEADER_CLASS);
+    }
+
+    setInteractionStyle('col-resize', 'none');
+  }
+
+  function scheduleDragInteraction(header) {
+    if (dragInteractionTimer) {
+      window.clearTimeout(dragInteractionTimer);
+    }
+
+    dragInteractionTimer = window.setTimeout(function() {
+      dragInteractionTimer = null;
+
+      if (!dragState || dragState.handle !== header) return;
+
+      activateDragInteraction(header);
+    }, 0);
+  }
+
+  function stopDragInteraction(header) {
+    if (dragInteractionTimer) {
+      window.clearTimeout(dragInteractionTimer);
+      dragInteractionTimer = null;
+    }
+
+    if (header && header.classList) {
+      header.classList.remove(ACTIVE_HEADER_CLASS);
+    }
+
+    restoreInteractionStyle();
+  }
+
   function stopDragging(removePreview) {
     if (!dragState) return null;
 
@@ -689,8 +764,8 @@
     releaseDragPointerCapture();
 
     var completedDrag = dragState;
+    stopDragInteraction(completedDrag.handle);
     dragState = null;
-    document.body.classList.remove(DRAGGING_BODY_CLASS);
     document.removeEventListener('pointermove', handleDragMove);
     document.removeEventListener('pointerup', finishDrag);
     document.removeEventListener('pointercancel', finishDrag);
@@ -714,12 +789,12 @@
 
   function startApplyingWidth() {
     applyingWidth = true;
-    document.body.classList.add(APPLYING_BODY_CLASS);
+    setInteractionStyle('wait', 'none');
   }
 
   function stopApplyingState() {
     applyingWidth = false;
-    document.body.classList.remove(APPLYING_BODY_CLASS);
+    restoreInteractionStyle();
   }
 
   function stopApplyingWidth(preview) {
@@ -891,10 +966,10 @@
     };
 
     captureDragPointer(header, event);
-    document.body.classList.add(DRAGGING_BODY_CLASS);
     document.addEventListener('pointermove', handleDragMove);
     document.addEventListener('pointerup', finishDrag);
     document.addEventListener('pointercancel', finishDrag);
+    scheduleDragInteraction(header);
   }
 
   function handleDragMove(event) {

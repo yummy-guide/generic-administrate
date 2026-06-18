@@ -34,13 +34,13 @@ table[data-fixed-columns-count] > thead > tr > th[data-admin-column-resizer-colu
 
 table[data-fixed-columns-count] > thead > tr > th[data-column-id]:hover::after,
 table[data-fixed-columns-count] > thead > tr > th[data-admin-column-resizer-column-id]:hover::after,
-.admin-column-resizer--dragging table[data-fixed-columns-count] > thead > tr > th[data-column-id]::after,
-.admin-column-resizer--dragging table[data-fixed-columns-count] > thead > tr > th[data-admin-column-resizer-column-id]::after {
+table[data-fixed-columns-count] > thead > tr > th.admin-column-resizer__header--dragging::after {
   opacity: 1;
 }
 
 table[data-fixed-columns-count] > thead > tr > th[data-column-id]:hover::after,
-table[data-fixed-columns-count] > thead > tr > th[data-admin-column-resizer-column-id]:hover::after {
+table[data-fixed-columns-count] > thead > tr > th[data-admin-column-resizer-column-id]:hover::after,
+table[data-fixed-columns-count] > thead > tr > th.admin-column-resizer__header--dragging::after {
   background: rgba(255, 255, 255, 0.8);
 }
 
@@ -93,18 +93,6 @@ table[data-fixed-columns-count] > thead > tr > th[data-admin-column-resizer-colu
     min-width: 0 !important;
     flex: 1 1 auto !important;
   }
-}
-
-.admin-column-resizer--dragging,
-.admin-column-resizer--dragging * {
-  cursor: col-resize !important;
-  user-select: none !important;
-}
-
-.admin-column-resizer--applying,
-.admin-column-resizer--applying * {
-  cursor: wait !important;
-  user-select: none !important;
 }
 
 .admin-column-resizer__preview {
