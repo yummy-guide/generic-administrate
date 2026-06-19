@@ -131,21 +131,23 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
         collection_presenter: collection_presenter,
         column_names: %i[id customer note]
       )
+      id_width = "calc(4rem + var(--admin-copy-cell-width-offset, 1.85rem))"
+      customer_width = "calc(14rem + var(--admin-copy-cell-width-offset, 1.85rem))"
 
       expect(definition.fixed_columns_count).to eq(2)
       expect(definition.mobile_fixed_columns_count).to eq(1)
       expect(definition.sticky_column(:customer)).to include(
         class: "sticky-left sticky-left--last",
-        style: "--sticky-left: 4rem; --sticky-width: 14rem"
+        style: "--sticky-left: #{id_width}; --sticky-width: #{customer_width}"
       )
-      expect(definition.table_style).to include("--admin-sticky-col-2-width: 14rem")
+      expect(definition.table_style).to include("--admin-sticky-col-2-width: #{customer_width}")
       expect(definition.table_style).to include("--admin-sticky-col-3-width: max-content")
-      expect(definition.grid_template_columns).to eq("4rem 14rem max-content")
+      expect(definition.grid_template_columns).to eq("#{id_width} #{customer_width} max-content")
       expect(definition.column_id(:customer)).to eq("reservation.customer")
       expect(definition.actions_column_id).to eq("reservation.actions")
     end
 
-    # Dashboard のデフォルト幅とブラウザ別の保存幅がCSS変数として同じテーブル定義へ反映されることを確認する
+    # Dashboard のデフォルト幅にはコピー操作幅を含め、ブラウザ別の保存幅はそのまま反映されることを確認する
     it "builds resizable width variables from default and saved column widths" do
       dashboard_class = Class.new do
         def self.index_default_column_widths
@@ -170,12 +172,14 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
         column_names: %i[name interview_summary memo]
       )
 
-      expect(definition.table_style).to include("--admin-column-resizer-default-col-2: 800px")
+      default_width = "calc(800px + var(--admin-copy-cell-width-offset, 1.85rem))"
+
+      expect(definition.table_style).to include("--admin-column-resizer-default-col-2: #{default_width}")
       expect(definition.table_style).to include("--admin-column-resizer-user-col-3: 320px")
       expect(definition.table_style).to include("--admin-column-resizer-col-2: var(--admin-column-resizer-user-col-2, var(--admin-column-resizer-default-col-2))")
       expect(definition.table_style).to include("--admin-column-resizer-col-3: var(--admin-column-resizer-user-col-3)")
       expect(definition.adjusted_column_indexes).to eq([2, 3])
-      expect(definition.colgroup_widths).to eq([nil, "800px", "320px"])
+      expect(definition.colgroup_widths).to eq([nil, default_width, "320px"])
     end
   end
 
@@ -205,14 +209,16 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
         collection_presenter: collection_presenter,
         column_names: %i[id customer note]
       )
+      id_width = "calc(4rem + var(--admin-copy-cell-width-offset, 1.85rem))"
+      customer_width = "calc(14rem + var(--admin-copy-cell-width-offset, 1.85rem))"
 
       expect(sticky_columns[:id]).to eq(
         class: "sticky-left sticky-left-mobile sticky-left-mobile--last",
-        style: "--sticky-left: 0px; --sticky-width: 4rem; --sticky-mobile-left: 0px; --sticky-mobile-width: 4rem"
+        style: "--sticky-left: 0px; --sticky-width: #{id_width}; --sticky-mobile-left: 0px; --sticky-mobile-width: #{id_width}"
       )
       expect(sticky_columns[:customer]).to eq(
         class: "sticky-left sticky-left--last",
-        style: "--sticky-left: 4rem; --sticky-width: 14rem"
+        style: "--sticky-left: #{id_width}; --sticky-width: #{customer_width}"
       )
       expect(sticky_columns).not_to have_key(:note)
     end
@@ -291,11 +297,14 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
         page: page,
         column_names: %i[id customer note]
       )
+      id_width = "calc(4rem + var(--admin-copy-cell-width-offset, 1.85rem))"
+      customer_width = "calc(14rem + var(--admin-copy-cell-width-offset, 1.85rem))"
+      fallback_width = "calc(8rem + var(--admin-copy-cell-width-offset, 1.85rem))"
 
-      expect(style).to include("--admin-sticky-col-1-width: 4rem")
-      expect(style).to include("--admin-sticky-mobile-col-1-width: 4rem")
-      expect(style).to include("--admin-sticky-col-2-width: 14rem")
-      expect(style).to include("--admin-sticky-col-3-width: 8rem")
+      expect(style).to include("--admin-sticky-col-1-width: #{id_width}")
+      expect(style).to include("--admin-sticky-mobile-col-1-width: #{id_width}")
+      expect(style).to include("--admin-sticky-col-2-width: #{customer_width}")
+      expect(style).to include("--admin-sticky-col-3-width: #{fallback_width}")
     end
   end
 

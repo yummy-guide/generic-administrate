@@ -344,6 +344,10 @@
   vertical-align: middle;
 }
 
+body {
+  --admin-copy-cell-width-offset: 1.85rem;
+}
+
 .admin-copy-cell {
   position: relative;
   display: inline-flex;

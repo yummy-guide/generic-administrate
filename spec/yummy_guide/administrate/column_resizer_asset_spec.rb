@@ -422,6 +422,7 @@ RSpec.describe "column resizer assets" do
     expect(components_source).to include("width: max-content")
     expect(components_source).to include("min-width: max-content")
     expect(components_source).to include("white-space: nowrap")
+    expect(components_source).to include("--admin-copy-cell-width-offset: 1.85rem")
     expect(stylesheet_source).to include("> .admin-copy-cell")
     expect(stylesheet_source).to include("width: 100% !important")
     expect(stylesheet_source).to include("flex: 1 1 auto !important")

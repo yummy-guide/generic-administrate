@@ -17,6 +17,7 @@ module YummyGuide
       }.freeze
       DEFAULT_FIXED_COLUMN_WIDTH = "8rem"
       CONTENT_WIDTH_VALUE = "max-content"
+      COPY_CELL_ACTION_WIDTH_OFFSET = "var(--admin-copy-cell-width-offset, 1.85rem)"
       MAX_MOBILE_FIXED_COLUMNS_COUNT = 1
 
       CollectionTableDefinition = Struct.new(
@@ -174,7 +175,7 @@ module YummyGuide
         names.first(max_count).each_with_index.each_with_object({}) do |(name, index), sticky_columns|
           classes = []
           styles = []
-          width = widths.fetch(name, DEFAULT_FIXED_COLUMN_WIDTH)
+          width = widths.fetch(name, yummy_guide_administrate_collection_default_fixed_column_width)
 
           if index < fixed_count
             classes << "sticky-left"
@@ -210,7 +211,7 @@ module YummyGuide
         )
 
         names.first(6).each_with_index.flat_map do |name, index|
-          width = widths.fetch(name, DEFAULT_FIXED_COLUMN_WIDTH)
+          width = widths.fetch(name, yummy_guide_administrate_collection_default_fixed_column_width)
           column_number = index + 1
 
           [
@@ -349,13 +350,17 @@ module YummyGuide
             dashboard.class.index_fixed_column_widths if dashboard&.class&.respond_to?(:index_fixed_column_widths)
           end
 
-        DEFAULT_FIXED_COLUMN_WIDTHS.merge(
+        raw_widths = DEFAULT_FIXED_COLUMN_WIDTHS.merge(
           (configured_widths || {}).to_h.each_with_object({}) do |(name, width), widths|
             next if width.nil?
 
             widths[name.to_sym] = yummy_guide_administrate_collection_column_width_value(width)
           end
         )
+
+        raw_widths.transform_values do |width|
+          yummy_guide_administrate_collection_fixed_column_width_value(width)
+        end
       end
 
       def yummy_guide_administrate_collection_default_column_widths(page:)
@@ -371,7 +376,7 @@ module YummyGuide
           value = yummy_guide_administrate_collection_column_width_value(width)
           next if value == CONTENT_WIDTH_VALUE
 
-          widths[name.to_sym] = value
+          widths[name.to_sym] = yummy_guide_administrate_collection_default_column_width_value(value)
         end
       end
 
@@ -470,12 +475,30 @@ module YummyGuide
         width.to_s
       end
 
+      def yummy_guide_administrate_collection_default_column_width_value(width)
+        yummy_guide_administrate_collection_column_width_value_with_copy_action(width)
+      end
+
+      def yummy_guide_administrate_collection_fixed_column_width_value(width)
+        yummy_guide_administrate_collection_column_width_value_with_copy_action(width)
+      end
+
+      def yummy_guide_administrate_collection_column_width_value_with_copy_action(width)
+        return width if width == CONTENT_WIDTH_VALUE
+
+        "calc(#{width} + #{COPY_CELL_ACTION_WIDTH_OFFSET})"
+      end
+
+      def yummy_guide_administrate_collection_default_fixed_column_width
+        yummy_guide_administrate_collection_fixed_column_width_value(DEFAULT_FIXED_COLUMN_WIDTH)
+      end
+
       def yummy_guide_administrate_collection_sticky_lefts(column_names, widths)
         current_parts = []
 
         column_names.each_with_object({}) do |name, lefts|
           lefts[name] = yummy_guide_administrate_collection_css_sum(current_parts)
-          current_parts << widths.fetch(name, DEFAULT_FIXED_COLUMN_WIDTH)
+          current_parts << widths.fetch(name, yummy_guide_administrate_collection_default_fixed_column_width)
         end
       end
 
