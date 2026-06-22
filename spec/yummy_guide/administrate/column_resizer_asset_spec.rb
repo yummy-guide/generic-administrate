@@ -416,12 +416,17 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).not_to include("initializeAdjustedColumnWidths")
   end
 
-  # 未調整のコピーセルは内容とコピーアイコンを1行で収める幅を自然幅として使うことを確認する
-  it "keeps copy cells on one line until a column width is adjusted" do
+  # 未調整のコピーセルもテーブルセル幅の中で縮み、必要に応じて折り返されることを静的に確認する
+  it "allows table copy cells to wrap before a column width is adjusted" do
     expect(components_source).to include("display: inline-flex")
-    expect(components_source).to include("width: max-content")
-    expect(components_source).to include("min-width: max-content")
-    expect(components_source).to include("white-space: nowrap")
+    expect(components_source).to include("td.cell-data > .admin-copy-cell")
+    expect(components_source).to include("width: 100%;")
+    expect(components_source).to include("min-width: 0;")
+    expect(components_source).to include("max-width: 100%;")
+    expect(components_source).to include("td.cell-data > .admin-copy-cell > .admin-copy-cell__content")
+    expect(components_source).to include("white-space: inherit;")
+    expect(components_source).to include("overflow-wrap: anywhere;")
+    expect(components_source).to include("word-break: break-word;")
     expect(components_source).to include("--admin-copy-cell-width-offset: 1.85rem")
     expect(stylesheet_source).to include("> .admin-copy-cell")
     expect(stylesheet_source).to include("width: 100% !important")
