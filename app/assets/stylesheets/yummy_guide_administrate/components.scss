@@ -1044,6 +1044,8 @@ td.actions-column .sticky__item,
 }
 
 .yummy-guide-administrate-filter-form .filter_table {
+  border-collapse: separate;
+  border-spacing: 4px 0;
   width: 100%;
 }
 
@@ -1055,7 +1057,10 @@ td.actions-column .sticky__item,
 .yummy-guide-administrate-filter-form .filter_table td:first-child {
   width: 160px;
   font-weight: 600;
+  overflow-wrap: anywhere;
   vertical-align: middle;
+  white-space: normal;
+  word-break: normal;
 }
 
 .yummy-guide-administrate-filter-form input[type="text"],
@@ -1178,6 +1183,8 @@ body.admin-filter-open {
 }
 
 .filter-form .filter_table {
+  border-collapse: separate;
+  border-spacing: 4px 0;
   width: 100%;
 }
 
@@ -1189,7 +1196,10 @@ body.admin-filter-open {
 .filter-form .filter_table td:first-child {
   width: 160px;
   font-weight: 600;
+  overflow-wrap: anywhere;
   vertical-align: middle;
+  white-space: normal;
+  word-break: normal;
 }
 
 .filter-form input[type="text"],
@@ -1223,7 +1233,7 @@ body.admin-filter-open {
 
 .filter-table__clear {
   width: 1%;
-  padding-left: 8px;
+  padding-left: 0;
   text-align: right;
   vertical-align: middle;
   white-space: nowrap;
@@ -1272,7 +1282,7 @@ body.admin-filter-open {
 }
 
 .filter-checkbox-group__actions.filter-checkbox-group__actions--clear-cell {
-  flex-direction: row;
+  flex-direction: column;
   flex-wrap: nowrap;
   justify-content: flex-end;
   align-items: center;

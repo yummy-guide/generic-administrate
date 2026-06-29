@@ -34,6 +34,13 @@ RSpec.describe "copy cell assets" do
   # フィルター操作ボタンのセルが項目内で上下中央に配置されることを静的に確認する
   it "keeps filter control cells vertically centered" do
     expect(components_source).to include(".filter-form .filter_table td.filter-table__clear,\n.yummy-guide-administrate-filter-form .filter_table td.filter-table__clear {\n  vertical-align: middle;")
-    expect(components_source).to include(".filter-checkbox-group__actions.filter-checkbox-group__actions--clear-cell {\n  flex-direction: row;\n  flex-wrap: nowrap;")
+    expect(components_source).to include(".filter-checkbox-group__actions.filter-checkbox-group__actions--clear-cell {\n  flex-direction: column;\n  flex-wrap: nowrap;")
+  end
+
+  # フィルターの項目名・入力フォーム・操作ボタンの列間を4pxに保ち、項目名を折り返せることを静的に確認する
+  it "keeps filter table columns spaced and labels wrappable" do
+    expect(components_source.scan(/border-spacing: 4px 0;/).size).to be >= 2
+    expect(components_source.scan(/overflow-wrap: anywhere;/).size).to be >= 2
+    expect(components_source).to include(".filter-table__clear {\n  width: 1%;\n  padding-left: 0;")
   end
 end
