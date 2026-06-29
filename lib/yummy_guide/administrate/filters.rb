@@ -189,7 +189,12 @@ module YummyGuide
         protected
 
         def input_cell(view_context, _form, scope, current_values, locals)
-          selected_values = Array(current_values[name.to_s]).map(&:to_s).reject(&:blank?)
+          selected_value = if current_values.key?(name.to_s)
+                             current_values[name.to_s]
+                           else
+                             evaluate_option(options[:default], view_context, locals)
+                           end
+          selected_values = Array(selected_value).map(&:to_s).reject(&:blank?)
           group_name = (options[:group] || name).to_s.dasherize
           controls = normalize_options(view_context, locals).map do |label, value|
             value_string = value.to_s
@@ -240,6 +245,7 @@ module YummyGuide
           from_name = (options[:from] || :"start_#{name}").to_sym
           to_name = (options[:to] || :"end_#{name}").to_sym
           css_class = evaluate_option(options[:css_class] || "#{scope}_#{name}", view_context, locals)
+          minute_options = evaluate_option(options[:minute_options], view_context, locals)
 
           view_context.safe_join([
             view_context.render(
@@ -248,7 +254,8 @@ module YummyGuide
               field_name: from_name,
               current_value: current_values[from_name.to_s],
               css_class: css_class,
-              end_target: to_name
+              end_target: to_name,
+              minute_options: minute_options
             ),
             view_context.content_tag(:p, "〜", class: "filter-datetime-range-separator"),
             view_context.render(
@@ -257,7 +264,8 @@ module YummyGuide
               field_name: to_name,
               current_value: current_values[to_name.to_s],
               css_class: css_class,
-              end_of_day: true
+              end_of_day: true,
+              minute_options: minute_options
             )
           ])
         end

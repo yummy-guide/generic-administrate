@@ -1044,6 +1044,8 @@ td.actions-column .sticky__item,
 }
 
 .yummy-guide-administrate-filter-form .filter_table {
+  border-collapse: separate;
+  border-spacing: 4px 0;
   width: 100%;
 }
 
@@ -1055,7 +1057,10 @@ td.actions-column .sticky__item,
 .yummy-guide-administrate-filter-form .filter_table td:first-child {
   width: 160px;
   font-weight: 600;
+  overflow-wrap: anywhere;
   vertical-align: middle;
+  white-space: normal;
+  word-break: normal;
 }
 
 .yummy-guide-administrate-filter-form input[type="text"],
@@ -1082,6 +1087,206 @@ td.actions-column .sticky__item,
   background: #fff;
   border-top: 1px solid #e5e7eb;
   box-shadow: 0 -12px 24px rgba(15, 23, 42, 0.08);
+}
+
+#reserv-filter-options {
+  position: relative;
+}
+
+[data-admin-filter-overlay] {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+html.admin-filter-open,
+body.admin-filter-open {
+  overflow: hidden;
+}
+
+#reserv-filter-options > .filter-form,
+.admin-filter-modal-root > .filter-form {
+  display: none;
+  flex-direction: column;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  z-index: 1001;
+  width: calc(100vw - 48px);
+  max-width: 720px;
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  background: #fff;
+  border: 1px solid #d7dce5;
+  border-radius: 8px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.filter-form__header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 16px;
+}
+
+.filter-form__title {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  font-size: 1.2rem;
+}
+
+.filter-form__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #d0d7de;
+  border-radius: 50%;
+  background: #fff;
+  color: #57606a;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.filter-form__close:hover,
+.filter-form__close:focus,
+.filter-field-clear-button:hover,
+.filter-field-clear-button:focus,
+.filter-icon-button:hover,
+.filter-icon-button:focus {
+  border-color: #0d6efd;
+  background: #eef5ff;
+  color: #0d6efd;
+}
+
+.filter-form__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 20px;
+}
+
+.filter-form .filter_table {
+  border-collapse: separate;
+  border-spacing: 4px 0;
+  width: 100%;
+}
+
+.filter-form .filter_table td {
+  padding: 8px 0;
+  vertical-align: top;
+}
+
+.filter-form .filter_table td:first-child {
+  width: 160px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+  white-space: normal;
+  word-break: normal;
+}
+
+.filter-form input[type="text"],
+.filter-form input[type="number"],
+.filter-form input[type="search"],
+.filter-form input[type="date"],
+.filter-form select,
+.filter-form textarea,
+.filter-form .filter-datetime-group__time {
+  width: 100%;
+  min-height: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  border: 1px solid #dfe0e1;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+.filter-form__actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px 20px 20px;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.filter-table__clear {
+  width: 1%;
+  padding-left: 0;
+  text-align: right;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.filter-form .filter_table td.filter-table__clear,
+.yummy-guide-administrate-filter-form .filter_table td.filter-table__clear {
+  vertical-align: middle;
+}
+
+.filter-field-clear-button,
+.filter-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid #d0d7de;
+  border-radius: 5px;
+  background: #fff;
+  color: #57606a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.filter-control-icon {
+  display: inline-block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+}
+
+.filter-control-icon--eraser {
+  -webkit-mask: image-url("yummy_guide_administrate/icon-eraser.svg") center / contain no-repeat;
+  mask: image-url("yummy_guide_administrate/icon-eraser.svg") center / contain no-repeat;
+}
+
+.filter-control-icon--check-square {
+  -webkit-mask: image-url("yummy_guide_administrate/icon-check-square.svg") center / contain no-repeat;
+  mask: image-url("yummy_guide_administrate/icon-check-square.svg") center / contain no-repeat;
+}
+
+.filter-checkbox-group__actions.filter-checkbox-group__actions--clear-cell {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
 }
 
 .filter-datetime-group {
@@ -1195,9 +1400,24 @@ td.actions-column .sticky__item,
   }
 
   .yummy-guide-administrate-filter-form__actions,
+  .filter-form__actions,
   .filter-checkbox-group__actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  #reserv-filter-options > .filter-form,
+  .admin-filter-modal-root > .filter-form {
+    width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+  }
+
+  .filter-form__header {
+    padding: 16px 16px 12px;
+  }
+
+  .filter-form__body {
+    padding: 0 16px;
   }
 
   .filter-datetime-group {

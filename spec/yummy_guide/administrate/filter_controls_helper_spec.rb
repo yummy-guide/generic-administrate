@@ -54,6 +54,10 @@ RSpec.describe YummyGuide::Administrate::FilterControlsHelper do
       expect(close_button["aria-label"]).to eq("Close")
       expect(close_button["type"]).to eq("button")
       expect(document.at_css("form.filter-form")["action"]).to eq("/admin/resources")
+      expect(document.at_css('[data-admin-filter-overlay="true"]')).to be_present
+      clear_button = document.at_css('button.filter-field-clear-button[data-behavior="filter-field-clear"]')
+      expect(clear_button).to be_present
+      expect(clear_button.at_css("span.filter-control-icon.filter-control-icon--eraser[data-filter-icon='eraser'][aria-hidden='true']")).to be_present
       expect(document.at_css('input[name="search_options[keyword]"]')["value"]).to eq("tokyo")
       expect(document.at_css('select[name="search_options[status]"] option[selected]')["value"]).to eq("closed")
     end
@@ -81,9 +85,40 @@ RSpec.describe YummyGuide::Administrate::FilterControlsHelper do
       expect(controls.at_css("#reserv-filter-options > a.button").text).to eq("Filter")
       expect(controls.at_css("#reserv-filter-options > form")).to be_nil
       expect(modal_id).to eq("admin-filter-modal-1")
-      expect(modals.at_css("##{modal_id}.admin-filter-modal-root > .modal_overlay")).to be_present
+      expect(modals.at_css("##{modal_id}.admin-filter-modal-root > .modal_overlay[data-admin-filter-overlay='true']")).to be_present
       expect(modals.at_css("##{modal_id} > form.filter-form")["action"]).to eq("/admin/resources")
       expect(modals.at_css('input[name="search_options[keyword]"]')["value"]).to eq("tokyo")
+    end
+
+    # checkbox group の一括操作ボタンがアプリ側 helper なしで描画されることを確認する
+    it "renders built-in checkbox group action controls" do
+      dashboard = Class.new
+      dashboard.const_set(
+        :FILTER_ATTRIBUTES,
+        {
+          statuses: YummyGuide::Administrate::Filters::CheckboxGroup.with_options(
+            label: "Status",
+            collection: [["Open", "open"], ["Closed", "closed"]],
+            group: "resource-statuses"
+          )
+        }.freeze
+      )
+
+      html = helper_host.admin_filter_controls(
+        dashboard: dashboard,
+        path: "/admin/resources",
+        search_options: { statuses: ["open"] }
+      )
+      document = fragment(html)
+
+      select_all_button = document.at_css('button.filter-icon-button[data-behavior="checkbox-group-select-all"][data-target="resource-statuses"]')
+      clear_all_button = document.at_css('button.filter-icon-button[data-behavior="checkbox-group-clear-all"][data-target="resource-statuses"]')
+
+      expect(document.at_css('input[type="checkbox"][name="search_options[statuses][]"][value="open"]')["checked"]).to eq("checked")
+      expect(select_all_button["aria-label"]).to eq("Select all")
+      expect(select_all_button.at_css("span.filter-control-icon.filter-control-icon--check-square[data-filter-icon='check-square'][aria-hidden='true']")).to be_present
+      expect(clear_all_button["aria-label"]).to eq("Clear all")
+      expect(clear_all_button.at_css("span.filter-control-icon.filter-control-icon--eraser[data-filter-icon='eraser'][aria-hidden='true']")).to be_present
     end
 
     # boolean radio group が未指定・true・falseを横並びで描画し、ラベルと選択状態を反映することを確認する

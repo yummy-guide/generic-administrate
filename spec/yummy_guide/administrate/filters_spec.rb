@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "nokogiri"
 
 RSpec.describe YummyGuide::Administrate::Filters do
   describe YummyGuide::Administrate::Filters::Resolver do
@@ -30,6 +31,24 @@ RSpec.describe YummyGuide::Administrate::Filters do
         .with_name(:owner_name)
 
       expect(field.visible?(view_context, {})).to be(false)
+    end
+  end
+
+  describe YummyGuide::Administrate::Filters::CheckboxGroup do
+    # current_values に値がない場合は default 配列を選択状態として利用することを確認する
+    it "uses default values when current values do not include the field" do
+      view_context = ActionController::Base.helpers
+      form = double("form")
+      field = described_class.with_options(
+        collection: [["Open", "open"], ["Closed", "closed"]],
+        default: ["closed"]
+      ).with_name(:statuses)
+
+      html = field.send(:input_cell, view_context, form, :search_options, {}, {})
+      document = Nokogiri::HTML.fragment(html)
+
+      expect(document.at_css('input[value="closed"]')["checked"]).to eq("checked")
+      expect(document.at_css('input[value="open"]')["checked"]).to be_nil
     end
   end
 end

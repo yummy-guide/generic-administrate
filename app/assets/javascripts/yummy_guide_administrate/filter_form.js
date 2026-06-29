@@ -110,7 +110,6 @@
       var inputType = (inputEl.getAttribute("type") || "").toLowerCase();
 
       if (inputType === "checkbox" || inputType === "radio") return;
-      if (inputType === "hidden" && inputEl.dataset.datetimePart !== "combined") return;
 
       inputEl.value = "";
       inputEl.setAttribute("value", "");
