@@ -17,14 +17,19 @@
     <% end %>
   </div>
   <div class="filter-checkbox-group__actions">
-    <%= button_tag "Select all",
-                   type: "button",
-                   class: "button button--outline-primary filter-checkbox-group__action",
-                   data: { behavior: "checkbox-group-select-all", target: group_name } %>
-    <%= button_tag "Clear all",
-                   type: "button",
-                   class: "button button--outline-primary filter-checkbox-group__action",
-                   data: { behavior: "checkbox-group-clear-all", target: group_name } %>
+    <%= button_tag type: "button",
+                   class: "button button--outline-primary filter-checkbox-group__action filter-icon-button",
+                   data: { behavior: "checkbox-group-select-all", target: group_name },
+                   aria: { label: "Select all" },
+                   title: "Select all" do %>
+      <%= filter_control_icon(:check_square) %>
+    <% end %>
+    <%= button_tag type: "button",
+                   class: "button button--outline-primary filter-checkbox-group__action filter-icon-button",
+                   data: { behavior: "checkbox-group-clear-all", target: group_name },
+                   aria: { label: "Clear all" },
+                   title: "Clear all" do %>
+      <%= filter_control_icon(:eraser) %>
+    <% end %>
   </div>
 </div>
-

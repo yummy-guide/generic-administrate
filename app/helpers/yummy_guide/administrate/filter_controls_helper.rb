@@ -3,6 +3,11 @@
 module YummyGuide
   module Administrate
     module FilterControlsHelper
+      FILTER_CONTROL_ICON_CLASS_MAP = {
+        "fa-eraser" => :eraser,
+        "fa-check-square" => :check_square
+      }.freeze
+
       def admin_filter_controls(
         dashboard: nil,
         page: nil,
@@ -73,7 +78,7 @@ module YummyGuide
         end
 
         safe_join([
-          content_tag(:div, "", class: "modal_overlay"),
+          content_tag(:div, "", class: "modal_overlay", data: { admin_filter_overlay: true }),
           admin_filter_button_container(button_label: button_label, form_markup: form_markup)
         ])
       end
@@ -135,7 +140,7 @@ module YummyGuide
             end,
             content_tag(:div, class: "filter-form__actions") do
               safe_join([
-                link_to("Clear", clear_path, class: "button button--outline-primary"),
+                link_to("Clear", clear_path, class: "button button--outline-primary", data: { behavior: "filter-form-clear-link" }),
                 Array(extra_actions),
                 f.submit(submit_label, class: "submit_filter")
               ].flatten)
@@ -159,7 +164,7 @@ module YummyGuide
       def admin_filter_modal_root(modal_id:, form_markup:)
         content_tag(:div, id: modal_id, class: "admin-filter-modal-root", data: { admin_filter_modal_root: true }) do
           safe_join([
-            content_tag(:div, "", class: "modal_overlay"),
+            content_tag(:div, "", class: "modal_overlay", data: { admin_filter_overlay: true }),
             form_markup
           ])
         end
@@ -232,6 +237,91 @@ module YummyGuide
           end
 
         values.deep_stringify_keys
+      end
+
+      def filter_field_clear_button
+        button_tag(
+          type: "button",
+          class: "filter-field-clear-button",
+          data: { behavior: "filter-field-clear" },
+          aria: { label: "Clear this filter" },
+          title: "Clear this filter"
+        ) do
+          filter_control_icon(:eraser)
+        end
+      end
+
+      def filter_field_clear_cell
+        content_tag(:td, filter_field_clear_button, class: "filter-table__clear")
+      end
+
+      def checkbox_group_select_all_button(target:)
+        checkbox_group_action_button(
+          icon: :check_square,
+          label: "Select all",
+          behavior: "checkbox-group-select-all",
+          target: target
+        )
+      end
+
+      def checkbox_group_clear_all_button(target:)
+        checkbox_group_action_button(
+          icon: :eraser,
+          label: "Clear all",
+          behavior: "checkbox-group-clear-all",
+          target: target
+        )
+      end
+
+      def checkbox_group_action_cell(target:)
+        content_tag(:td, class: "filter-table__clear filter-table__checkbox-actions") do
+          content_tag(
+            :div,
+            safe_join([
+              checkbox_group_select_all_button(target: target),
+              checkbox_group_clear_all_button(target: target)
+            ]),
+            class: "filter-checkbox-group__actions filter-checkbox-group__actions--clear-cell"
+          )
+        end
+      end
+
+      def filter_control_icon(icon)
+        icon_name = icon.to_s.tr("_", "-")
+
+        content_tag(
+          :span,
+          "",
+          class: "filter-control-icon filter-control-icon--#{icon_name}",
+          data: { filter_icon: icon_name },
+          aria: { hidden: true }
+        )
+      end
+
+      def checkbox_group_action_button(label:, behavior:, target:, icon: nil, icon_class: nil, title: nil)
+        accessible_label = title || label
+        icon ||= filter_control_icon_name_from_class(icon_class)
+
+        button_tag(
+          type: "button",
+          class: "filter-icon-button",
+          data: { behavior: behavior, target: target },
+          aria: { label: accessible_label },
+          title: accessible_label
+        ) do
+          if icon.present?
+            filter_control_icon(icon)
+          else
+            label
+          end
+        end
+      end
+
+      def filter_control_icon_name_from_class(icon_class)
+        classes = icon_class.to_s.split
+        icon_class_name = FILTER_CONTROL_ICON_CLASS_MAP.keys.find { |class_name| classes.include?(class_name) }
+
+        FILTER_CONTROL_ICON_CLASS_MAP[icon_class_name]
       end
     end
   end
