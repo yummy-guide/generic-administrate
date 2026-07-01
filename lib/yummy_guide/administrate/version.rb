@@ -2,6 +2,6 @@
 
 module YummyGuide
   module Administrate
-    VERSION = "0.8.14"
+    VERSION = "0.8.15"
   end
 end
