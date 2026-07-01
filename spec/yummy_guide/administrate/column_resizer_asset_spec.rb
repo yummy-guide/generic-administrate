@@ -358,6 +358,22 @@ RSpec.describe "column resizer assets" do
     expect(resizable_navigation_source).to include("z-index: var(--admin-navigation-z-index, 40)")
   end
 
+  # ページネーションを固定ページヘッダー下部中央に配置するCSSがあることを静的に確認する
+  it "places pagination at the bottom center of the sticky page header" do
+    expect(components_source).to include(".main-content__header-pagination")
+    expect(components_source).to include("inset-block-end: 0.5rem")
+    expect(components_source).to include("inset-inline-start: 50%")
+    expect(components_source).to include("transform: translateX(-50%)")
+    expect(components_source).to include("justify-content: center")
+    expect(components_source).to include("pointer-events: none")
+    expect(components_source).to include("pointer-events: auto")
+    expect(components_source).to include("--admin-sticky-page-header-height: 8rem")
+    expect(components_source).to include("--admin-sticky-page-header-height: 9rem")
+    expect(components_source).to include(".main-content__header:has(> .main-content__header-pagination)")
+    expect(components_source).to include("white-space: nowrap")
+    expect(components_source).to include("inline-size: auto")
+  end
+
   # 固定列リサイズ後にCSS変数のleftと幅を再計算する処理があることを静的に確認する
   it "recalculates CSS sticky-left offsets after applying column widths" do
     expect(javascript_source).to include("function refreshCssStickyLeftColumns(table)")

@@ -140,6 +140,11 @@
     box-shadow: 0 calc(0px - var(--admin-sticky-page-header-top, 0px)) 0 var(--admin-sticky-page-header-top, 0px) var(--admin-page-background, #f6f7f7);
   }
 
+  .app-container > .main-content:has(> .main-content__header > .main-content__header-pagination),
+  body.admin-body > main.main-content:has(> .main-content__header > .main-content__header-pagination) {
+    --admin-sticky-page-header-height: 8rem;
+  }
+
   .main-content__header--sticky-table-layout + .main-content__body,
   [data-reservations-sticky-header] + .main-content__body,
   .app-container > .main-content:has(> .main-content__body--flush [data-css-sticky-table]) > .main-content__body--flush,
@@ -188,6 +193,57 @@
     --admin-sticky-page-header-height: 6.75rem;
     --admin-sticky-page-header-z-index: 10;
   }
+
+  .app-container > .main-content:has(> .main-content__header > .main-content__header-pagination),
+  body.admin-body > main.main-content:has(> .main-content__header > .main-content__header-pagination) {
+    --admin-sticky-page-header-height: 9rem;
+  }
+}
+
+.main-content__header:has(> .main-content__header-pagination) {
+  padding-bottom: calc(var(--admin-sticky-page-header-pagination-height, 2.5rem) + 0.75rem);
+}
+
+.main-content__header-pagination {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  inset-block-end: 0.5rem;
+  inset-inline-start: 50%;
+  justify-content: center;
+  max-inline-size: calc(100% - 2rem);
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-50%);
+  width: max-content;
+  z-index: 1;
+}
+
+.main-content__header-pagination .pagination {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  justify-content: center;
+  margin: 0;
+  max-inline-size: 100%;
+  padding-left: 0;
+  padding-right: 0;
+  pointer-events: auto;
+  text-align: center;
+}
+
+.main-content__header-pagination .pagination .first,
+.main-content__header-pagination .pagination .prev,
+.main-content__header-pagination .pagination .page,
+.main-content__header-pagination .pagination .next,
+.main-content__header-pagination .pagination .last {
+  flex: 0 0 auto;
+  inline-size: auto;
+  margin: 0;
+  max-inline-size: none;
+  white-space: nowrap;
+  width: auto;
 }
 
 .scroll-table {
