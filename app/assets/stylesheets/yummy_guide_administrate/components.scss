@@ -645,7 +645,23 @@ td.cell-data:hover .admin-copy-cell__button:not([disabled]),
   left: calc(var(--admin-sticky-table-left-offset, 0px) + var(--sticky-left, 0px));
 }
 
+// TanStackを利用するテーブルでは、製品側のReact entrypointがテーブル要素に
+// 設定したCSS変数を使う。仮想行の生成ごとにセルへleftを直接書き込まない。
+@for $index from 1 through 6 {
+  table[data-yummy-guide-administrate-tanstack-table] > :is(thead, tbody, tfoot) > tr:not(.js-virtualized-table-spacer) > :nth-child(#{$index}).sticky-left {
+    --sticky-left: var(--yummy-guide-administrate-tanstack-column-#{$index}-left) !important;
+    --sticky-width: var(--yummy-guide-administrate-tanstack-column-#{$index}-width) !important;
+  }
+}
+
 @media (max-width: 767px) {
+  @for $index from 1 through 6 {
+    table[data-yummy-guide-administrate-tanstack-table] > :is(thead, tbody, tfoot) > tr:not(.js-virtualized-table-spacer) > :nth-child(#{$index}).sticky-left-mobile {
+      --sticky-mobile-left: var(--yummy-guide-administrate-tanstack-column-#{$index}-left) !important;
+      --sticky-mobile-width: var(--yummy-guide-administrate-tanstack-column-#{$index}-width) !important;
+    }
+  }
+
   @for $count from 1 through 6 {
     @for $index from 1 through $count {
       .scroll-table table[data-fixed-columns-count="#{$count}"] tr > :nth-child(#{$index}):not(.sticky-left),
