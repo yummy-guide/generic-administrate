@@ -57,6 +57,18 @@ RSpec.describe "column resizer assets" do
     expect(javascript_source).not_to include("refreshStickyLeftColumnsForWidth")
   end
 
+  # TanStack管理テーブルは仮想行ごとの固定セル再計算を避け、幅変更イベントだけを通知することを確認する
+  it "delegates TanStack table pinning updates to the product entrypoint" do
+    sticky_left_columns_source = File.read(File.expand_path("../../../app/assets/javascripts/yummy_guide_administrate/sticky_left_columns.js", __dir__))
+    stylesheet_source = File.read(File.expand_path("../../../app/assets/stylesheets/yummy_guide_administrate/components.scss", __dir__))
+
+    expect(sticky_left_columns_source).to include('table[data-fixed-columns-count]:not([data-yummy-guide-administrate-tanstack-table])')
+    expect(javascript_source).to include("TANSTACK_TABLE_ATTRIBUTE = 'data-yummy-guide-administrate-tanstack-table'")
+    expect(javascript_source).to include("yummy-guide-administrate:column-width-change")
+    expect(javascript_source).to include("if (table.hasAttribute(TANSTACK_TABLE_ATTRIBUTE)) return;")
+    expect(stylesheet_source).to include('--yummy-guide-administrate-tanstack-column-#{$index}-left')
+  end
+
   # ドラッグ中は実テーブルを再レイアウトせず、プレビューだけを更新することを静的に確認する
   it "updates only the lightweight preview while dragging" do
     expect(javascript_source).to include("createDragPreview(sourceTable, previewHeader, startWidth, previewHeaderRect)")

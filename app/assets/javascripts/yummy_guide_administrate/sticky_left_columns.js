@@ -1,5 +1,5 @@
 (function() {
-  var TABLE_SELECTOR = "table[data-fixed-columns-count]";
+  var TABLE_SELECTOR = "table[data-fixed-columns-count]:not([data-yummy-guide-administrate-tanstack-table])";
   var MOBILE_MEDIA_QUERY = "(max-width: 767px)";
   var resizeObservers = new WeakMap();
   var suppressedResizeTables = new WeakMap();

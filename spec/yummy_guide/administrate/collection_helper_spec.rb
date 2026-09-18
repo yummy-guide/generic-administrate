@@ -26,6 +26,15 @@ RSpec.describe YummyGuide::Administrate::CollectionHelper do
     end.new
   end
 
+  describe "#yummy_guide_administrate_tanstack_table_attributes" do
+    # TanStack管理のテーブルだけが従来の固定列JSを回避できる属性を返すことを確認する
+    it "returns the TanStack opt-in data attribute" do
+      expect(helper_host.yummy_guide_administrate_tanstack_table_attributes).to eq(
+        "data-yummy-guide-administrate-tanstack-table" => "true"
+      )
+    end
+  end
+
   describe "#yummy_guide_administrate_collection_table_fixed_columns_count" do
     # dashboard の固定列数が表示列数を超えていても、実際の列数で打ち止めになることを確認する
     it "caps the fixed column count by the number of visible attributes" do

@@ -98,6 +98,14 @@ module YummyGuide
         )
       end
 
+      # TanStack Table を利用する製品側テーブルが、従来の固定列JSではなく
+      # CSS変数経由で固定位置を受け取るためのopt-in属性を返す。
+      def yummy_guide_administrate_tanstack_table_attributes
+        {
+          "data-yummy-guide-administrate-tanstack-table" => "true"
+        }
+      end
+
       def yummy_guide_administrate_collection_table_fixed_columns_count(page:, collection_presenter:)
         yummy_guide_administrate_collection_fixed_columns_count_for(
           page: page,

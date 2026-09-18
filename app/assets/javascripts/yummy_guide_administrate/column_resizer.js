@@ -1,5 +1,6 @@
 (function() {
   var TABLE_SELECTOR = 'table[data-fixed-columns-count]';
+  var TANSTACK_TABLE_ATTRIBUTE = 'data-yummy-guide-administrate-tanstack-table';
   var CSS_STICKY_TABLE_SELECTOR = '[data-css-sticky-table]';
   var MAIN_CONTENT_SELECTOR = '.main-content';
   var STICKY_PAGE_HEADER_SELECTOR = '.main-content__header--sticky-table-layout, [data-reservations-sticky-header], .main-content__header';
@@ -544,12 +545,15 @@
 
   function refreshCssStickyLeftColumns(table) {
     if (!table || table.getAttribute('aria-hidden') === 'true') return;
+    if (table.hasAttribute(TANSTACK_TABLE_ATTRIBUTE)) return;
 
     refreshCssStickyLeftColumnSet(table, 'sticky-left', '--sticky-left', '--sticky-width');
     refreshCssStickyLeftColumnSet(table, 'sticky-left-mobile', '--sticky-mobile-left', '--sticky-mobile-width');
   }
 
   function refreshExternalStickyLeftColumns(table, options) {
+    if (table && table.hasAttribute(TANSTACK_TABLE_ATTRIBUTE)) return false;
+
     var api = window.YummyGuideAdministrateStickyLeftColumns;
     var settings = options || {};
 
@@ -571,6 +575,16 @@
   }
 
   function refreshTableWidthLayout(table, options) {
+    if (table && table.hasAttribute(TANSTACK_TABLE_ATTRIBUTE)) {
+      table.dispatchEvent(new CustomEvent('yummy-guide-administrate:column-width-change', {
+        bubbles: true,
+        detail: {
+          columnId: options && options.columnId,
+          width: options && options.width
+        }
+      }));
+    }
+
     refreshCssStickyLeftColumns(table);
     refreshExternalStickyLeftColumns(table, options);
     refreshStickyHeaderLayoutForTable(table);
