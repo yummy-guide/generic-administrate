@@ -60,6 +60,11 @@ RSpec.describe YummyGuide::Administrate::FilterControlsHelper do
       expect(clear_button.at_css("span.filter-control-icon.filter-control-icon--eraser[data-filter-icon='eraser'][aria-hidden='true']")).to be_present
       expect(document.at_css('input[name="search_options[keyword]"]')["value"]).to eq("tokyo")
       expect(document.at_css('select[name="search_options[status]"] option[selected]')["value"]).to eq("closed")
+
+      form_clear_button = document.at_css('.filter-form__actions button[data-behavior="filter-form-clear"]')
+      expect(form_clear_button).to be_present
+      expect(form_clear_button["type"]).to eq("button")
+      expect(document.at_css('.filter-form__actions a[data-behavior="filter-form-clear-link"]')).to be_nil
     end
 
     # body mount指定時はフォームをcontent_forへ逃がし、ヘッダー側には起動ボタンだけを残すことを確認する

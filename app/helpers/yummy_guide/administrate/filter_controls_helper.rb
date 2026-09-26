@@ -140,7 +140,12 @@ module YummyGuide
             end,
             content_tag(:div, class: "filter-form__actions") do
               safe_join([
-                link_to("Clear", clear_path, class: "button button--outline-primary", data: { behavior: "filter-form-clear-link" }),
+                button_tag(
+                  "Clear",
+                  type: "button",
+                  class: "button button--outline-primary",
+                  data: { behavior: "filter-form-clear" }
+                ),
                 Array(extra_actions),
                 f.submit(submit_label, class: "submit_filter")
               ].flatten)
