@@ -79,12 +79,21 @@
 
   function clearFormFields(formEl) {
     formEl.querySelectorAll("input, select, textarea").forEach(function(fieldEl) {
-      if (fieldEl.disabled || fieldEl.type === "hidden" || fieldEl.type === "submit") {
+      if (fieldEl.disabled || fieldEl.type === "submit") {
+        return;
+      }
+
+      // フォーム全体のhidden（hidden_fields / root_hidden_fields等）は保持し、フィルター行内のhiddenのみクリアする
+      if (fieldEl.type === "hidden") {
+        if (!fieldEl.closest(".filter_table")) return;
+
+        fieldEl.value = "";
+        fieldEl.setAttribute("value", "");
         return;
       }
 
       if (fieldEl.tagName === "SELECT") {
-        fieldEl.value = "";
+        resetSelectControl(fieldEl);
         return;
       }
 
@@ -123,15 +132,18 @@
   }
 
   function clearSelectControls(rowEl) {
-    rowEl.querySelectorAll("select").forEach(function(selectEl) {
-      if (selectEl.querySelector('option[value=""]')) {
-        selectEl.value = "";
-      } else if (selectEl.querySelector('option[value="all"]')) {
-        selectEl.value = "all";
-      } else {
-        selectEl.selectedIndex = -1;
-      }
-    });
+    rowEl.querySelectorAll("select").forEach(resetSelectControl);
+  }
+
+  // 空の選択肢がないselect（例: ["All months", "all"]始まり）でも未選択表示にならないよう、"all"を優先して選択する
+  function resetSelectControl(selectEl) {
+    if (selectEl.querySelector('option[value=""]')) {
+      selectEl.value = "";
+    } else if (selectEl.querySelector('option[value="all"]')) {
+      selectEl.value = "all";
+    } else {
+      selectEl.selectedIndex = -1;
+    }
   }
 
   function clearDatetimeFilters(rowEl) {
