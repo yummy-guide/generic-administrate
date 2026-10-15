@@ -260,6 +260,15 @@
   overflow: visible;
 }
 
+// Embedded tables opt in so the wrapper, not the page, owns both scroll axes.
+.scroll-table[data-css-sticky-table][data-constrained-scroll],
+.home-table__wrapper[data-css-sticky-table][data-constrained-scroll] {
+  --admin-sticky-actions-right: 0px; // pin Actions to the box edge, not to the page padding
+  max-block-size: calc(100dvh - var(--admin-sticky-page-header-height, 8rem) - 5rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
 .scroll-table[data-css-sticky-table] table,
 .sticky-table-scroll[data-css-sticky-table] table,
 .home-table__wrapper[data-css-sticky-table] table,
@@ -1644,6 +1653,14 @@ body.admin-filter-open {
     overscroll-behavior: contain;
     touch-action: pan-x pan-y;
     width: 100vw !important;
+  }
+
+  // Constrained tables live inside a padded card, so fit the card instead of the viewport.
+  body :is(.scroll-table, .home-table__wrapper)[data-css-sticky-table][data-constrained-scroll] {
+    inline-size: 100% !important;
+    max-inline-size: 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
   }
 
   body.admin-navigation-mobile-open:has([data-css-sticky-table]) :is(.scroll-table, .sticky-table-scroll, .home-table__wrapper, .table-wrap, .af__table__content)[data-css-sticky-table] {
