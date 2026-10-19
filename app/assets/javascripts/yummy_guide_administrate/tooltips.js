@@ -73,12 +73,23 @@
     return tooltipElement;
   }
 
+  function templateContentHtml(template) {
+    var html = template.innerHTML;
+    if (html) return html;
+
+    // React は <template> の子要素を template.content ではなく直接配置するため、
+    // innerHTML が空の場合は直接の子ノードから本文を復元する。
+    return Array.prototype.map.call(template.childNodes, function(node) {
+      return node.outerHTML || node.textContent || "";
+    }).join("");
+  }
+
   function tooltipContent(trigger) {
     var contentId = trigger.getAttribute("data-admin-tooltip-content-id");
     var template = contentId ? document.getElementById(contentId) : null;
     if (template) {
       return {
-        html: template.innerHTML,
+        html: templateContentHtml(template),
         text: ""
       };
     }

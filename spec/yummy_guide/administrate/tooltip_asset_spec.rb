@@ -40,10 +40,13 @@ RSpec.describe "tooltip assets" do
     expect(javascript_source).to include("hideTooltip()")
   end
 
-  # block本文用のtemplateがある場合はHTML本文としてtooltipへ描画することを静的に確認する
+  # ERBのtemplate本文とReactが直接配置する子要素の両方をHTML本文としてtooltipへ描画することを静的に確認する
   it "renders template content for block tooltip bodies" do
     expect(javascript_source).to include('getAttribute("data-admin-tooltip-content-id")')
     expect(javascript_source).to include("template.innerHTML")
+    expect(javascript_source).to include("templateContentHtml")
+    expect(javascript_source).to include("Array.prototype.map.call(template.childNodes")
+    expect(javascript_source).to include("node.outerHTML || node.textContent")
     expect(javascript_source).to include("tooltipElement.innerHTML = content.html")
     expect(javascript_source).to include("tooltipElement.textContent = content.text")
   end
