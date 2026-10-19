@@ -15,4 +15,14 @@ RSpec.describe YummyGuide::Administrate::IntegrationTransitionHelper do
     expect(html).to include("処理中です")
     expect(html).to include("対象 Assign: 2件")
   end
+
+  # 紐付け設定が必要な警告は赤色カードとcautionアイコンで強調すること
+  it "renders a warning notice as a caution card" do
+    html = view.integration_transition_notice(message: "JobOption の紐付け設定が必要", state: "warning")
+
+    expect(html).to include("integration-transition-notice--warning")
+    expect(html).to include('data-integration-transition-state="warning"')
+    expect(html).to include("integration-transition-notice__caution-icon")
+    expect(html).to include("#fef3f2")
+  end
 end
