@@ -252,6 +252,11 @@
   });
 
   document.addEventListener("focusin", function(event) {
+    if (interactiveTooltipTarget(event.target)) {
+      clearWarningHideTimer();
+      return;
+    }
+
     var trigger = closestTrigger(event.target);
     if (!trigger || isMobile()) return;
 
@@ -266,9 +271,21 @@
     if (focusedTrigger === trigger) {
       focusedTrigger = null;
     }
+    if (warningTrigger(trigger) && interactiveTooltipTarget(event.relatedTarget)) {
+      clearWarningHideTimer();
+      return;
+    }
     if (hoveredTrigger === trigger || pinnedTrigger === trigger) return;
 
     hideTooltip(trigger);
+  });
+
+  document.addEventListener("focusout", function(event) {
+    if (!interactiveTooltipTarget(event.target)) return;
+    if (interactiveTooltipTarget(event.relatedTarget)) return;
+    if (activeTrigger && event.relatedTarget && (activeTrigger === event.relatedTarget || activeTrigger.contains(event.relatedTarget))) return;
+
+    hideTooltip();
   });
 
   document.addEventListener("click", function(event) {

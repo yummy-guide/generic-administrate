@@ -59,7 +59,7 @@ RSpec.describe "tooltip assets" do
     expect(stylesheet_source).to include('background: #fff')
     expect(stylesheet_source).to include('.admin-tooltip__warning-details')
     expect(stylesheet_source).to include('align-items: baseline')
-    expect(stylesheet_source).to include('pointer-events: auto')
+    expect(stylesheet_source).to match(/\.admin-tooltip--warning\.admin-tooltip--visible\s*\{[^}]*pointer-events: auto;/m)
   end
 
   # warning cardはポインターをカード上へ移動しても閉じず、操作要素をクリックできることを静的に確認する
@@ -70,6 +70,20 @@ RSpec.describe "tooltip assets" do
     expect(javascript_source).to include('clearWarningHideTimer()')
     expect(javascript_source).to include('hideTooltipAfterPointerLeave(trigger)')
     expect(javascript_source).to include('"dialog"')
+  end
+
+  # warning cardを閉じた後は透明な要素が背後の操作を妨げないことを静的に確認する
+  it "enables pointer events only while warning cards are visible" do
+    expect(stylesheet_source).to include('.admin-tooltip--warning.admin-tooltip--visible')
+    expect(stylesheet_source).to include('pointer-events: none')
+  end
+
+  # triggerとwarning card間のキーボードフォーカス移動では閉じず、外部への移動で閉じることを静的に確認する
+  it "keeps warning cards open while focus moves within the interactive card" do
+    expect(javascript_source).to include('warningTrigger(trigger) && interactiveTooltipTarget(event.relatedTarget)')
+    expect(javascript_source).to include('activeTrigger === event.relatedTarget || activeTrigger.contains(event.relatedTarget)')
+    expect(javascript_source).to include('if (!interactiveTooltipTarget(event.target)) return;')
+    expect(javascript_source).to include('hideTooltip();')
   end
 
   # warning cardの確認操作を詳細項目の右下へ配置するスタイルを持つことを確認する
