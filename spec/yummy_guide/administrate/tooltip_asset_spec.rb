@@ -22,29 +22,74 @@ RSpec.describe "tooltip assets" do
     expect(javascript_source).to include("showTooltip(trigger)")
   end
 
-  # モバイルではクリックで tooltip 表示をトグルする契約を持つことを静的に確認する
-  it "supports mobile click toggling" do
+  # 画面幅にかかわらずクリックで tooltip 表示を固定・トグルできることを静的に確認する
+  it "supports click toggling on every screen size" do
     expect(javascript_source).to include('MOBILE_MEDIA_QUERY = "(max-width: 767px)"')
     expect(javascript_source).to include("window.matchMedia")
     expect(javascript_source).to include('document.addEventListener("click"')
     expect(javascript_source).to include("toggleTooltip(trigger)")
+    expect(javascript_source).to include("pinnedTrigger = trigger")
     expect(javascript_source).to include("event.stopPropagation()")
   end
 
   # Esc / 外側クリック / resize で表示中 tooltip を閉じられることを静的に確認する
   it "closes the active tooltip from common dismissal events" do
     expect(javascript_source).to include('event.key !== "Escape"')
-    expect(javascript_source).to include("if (activeTrigger && isMobile())")
+    expect(javascript_source).to include("if (activeTrigger)")
     expect(javascript_source).to include('window.addEventListener("resize"')
     expect(javascript_source).to include("hideTooltip()")
   end
 
-  # block本文用のtemplateがある場合はHTML本文としてtooltipへ描画することを静的に確認する
+  # ERBのtemplate本文とReactが直接配置する子要素の両方をHTML本文としてtooltipへ描画することを静的に確認する
   it "renders template content for block tooltip bodies" do
     expect(javascript_source).to include('getAttribute("data-admin-tooltip-content-id")')
     expect(javascript_source).to include("template.innerHTML")
+    expect(javascript_source).to include("templateContentHtml")
+    expect(javascript_source).to include("Array.prototype.map.call(template.childNodes")
+    expect(javascript_source).to include("node.outerHTML || node.textContent")
     expect(javascript_source).to include("tooltipElement.innerHTML = content.html")
     expect(javascript_source).to include("tooltipElement.textContent = content.text")
+  end
+
+  # warning variantでは白背景の項目別ポップオーバーを表示できることを静的に確認する
+  it "supports warning card tooltip variants" do
+    expect(javascript_source).to include('data-admin-tooltip-variant')
+    expect(javascript_source).to include('"admin-tooltip--warning"')
+    expect(stylesheet_source).to include('.admin-tooltip--warning')
+    expect(stylesheet_source).to include('background: #fff')
+    expect(stylesheet_source).to include('.admin-tooltip__warning-details')
+    expect(stylesheet_source).to include('align-items: baseline')
+    expect(stylesheet_source).to match(/\.admin-tooltip--warning\.admin-tooltip--visible\s*\{[^}]*pointer-events: auto;/m)
+  end
+
+  # warning cardはポインターをカード上へ移動しても閉じず、操作要素をクリックできることを静的に確認する
+  it "keeps interactive warning cards open while they are hovered" do
+    expect(javascript_source).to include('interactiveTooltipTarget(event.relatedTarget)')
+    expect(javascript_source).to include('if (interactiveTooltipTarget(event.target)) return')
+    expect(javascript_source).to include('WARNING_HOVER_HIDE_DELAY = 300')
+    expect(javascript_source).to include('clearWarningHideTimer()')
+    expect(javascript_source).to include('hideTooltipAfterPointerLeave(trigger)')
+    expect(javascript_source).to include('"dialog"')
+  end
+
+  # warning cardを閉じた後は透明な要素が背後の操作を妨げないことを静的に確認する
+  it "enables pointer events only while warning cards are visible" do
+    expect(stylesheet_source).to include('.admin-tooltip--warning.admin-tooltip--visible')
+    expect(stylesheet_source).to include('pointer-events: none')
+  end
+
+  # triggerとwarning card間のキーボードフォーカス移動では閉じず、外部への移動で閉じることを静的に確認する
+  it "keeps warning cards open while focus moves within the interactive card" do
+    expect(javascript_source).to include('warningTrigger(trigger) && interactiveTooltipTarget(event.relatedTarget)')
+    expect(javascript_source).to include('activeTrigger === event.relatedTarget || activeTrigger.contains(event.relatedTarget)')
+    expect(javascript_source).to include('if (!interactiveTooltipTarget(event.target)) return;')
+    expect(javascript_source).to include('hideTooltip();')
+  end
+
+  # warning cardの確認操作を詳細項目の右下へ配置するスタイルを持つことを確認する
+  it "right-aligns warning card actions" do
+    expect(stylesheet_source).to include('.admin-tooltip__warning-actions')
+    expect(stylesheet_source).to include('justify-content: flex-end')
   end
 
   # tooltip の吹き出しと表示状態に必要な CSS class が定義されることを静的に確認する

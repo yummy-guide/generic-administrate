@@ -27,6 +27,7 @@ module YummyGuide
           ::Administrate::ApplicationController.helper YummyGuide::Administrate::FilterFormHelper
           ::Administrate::ApplicationController.helper YummyGuide::Administrate::FilterControlsHelper
           ::Administrate::ApplicationController.helper YummyGuide::Administrate::TooltipHelper
+          ::Administrate::ApplicationController.helper YummyGuide::Administrate::IntegrationTransitionHelper
         end
       end
     end

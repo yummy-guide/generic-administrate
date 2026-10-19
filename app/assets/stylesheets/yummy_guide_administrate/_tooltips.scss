@@ -55,6 +55,73 @@
   transform: translateY(0);
 }
 
+.admin-tooltip--warning {
+  max-width: 360px;
+  padding: 0;
+  border: 1px solid #fedf89;
+  border-left: 4px solid #f79009;
+  background: #fff;
+  color: #344054;
+}
+
+.admin-tooltip--warning.admin-tooltip--visible {
+  pointer-events: auto;
+}
+
+.admin-tooltip--warning::before {
+  background: #fff;
+}
+
+.admin-tooltip__warning-card {
+  padding: 0.75rem;
+}
+
+.admin-tooltip__warning-title {
+  display: block;
+  color: #7a2e0e;
+}
+
+.admin-tooltip__warning-message {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.admin-tooltip__warning-details {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.admin-tooltip__warning-details > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eaecf0;
+}
+
+.admin-tooltip__warning-details dt {
+  color: #667085;
+  font-weight: 600;
+}
+
+.admin-tooltip__warning-details dd {
+  margin: 0;
+  color: #344054;
+  text-align: right;
+}
+
+.admin-tooltip__warning-details dt,
+.admin-tooltip__warning-details dd {
+  line-height: 1.45;
+}
+
+.admin-tooltip__warning-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
 .admin-tooltip::before {
   content: "";
   position: absolute;
