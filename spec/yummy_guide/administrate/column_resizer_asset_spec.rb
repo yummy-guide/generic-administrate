@@ -257,6 +257,14 @@ RSpec.describe "column resizer assets" do
     expect(components_source).to include("width: var(--admin-sticky-actions-right, 0px)")
   end
 
+  it "supports opt-in scrolling for embedded sticky tables" do
+    expect(components_source).to include("[data-constrained-scroll]")
+    expect(components_source).to include(".home-table__wrapper[data-css-sticky-table][data-constrained-scroll]")
+    expect(components_source).to include("max-block-size: calc(100dvh - var(--admin-sticky-page-header-height, 8rem) - 5rem)")
+    expect(components_source).to include("overscroll-behavior: contain")
+    expect(components_source).to include("--admin-sticky-actions-right: 0px;")
+  end
+
   # PC表示ではsticky tableをページ全体スクロールで扱うことを静的に確認する
   it "expands the main content to the sticky table width on desktop" do
     expect(components_source).to include("@media screen and (min-width: 768px)")

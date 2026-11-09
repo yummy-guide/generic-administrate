@@ -1,10 +1,11 @@
 <% column_width_storage_scope = local_assigns[:column_width_storage_scope].presence %>
+<% constrained_scroll = local_assigns[:constrained_scroll] %>
 <% table_definition = yummy_guide_administrate_collection_table_definition(
      page: page,
      collection_presenter: collection_presenter,
      column_width_storage_scope: column_width_storage_scope
    ) %>
-<div class="scroll-table" data-css-sticky-table>
+<div class="scroll-table" data-css-sticky-table<%= " data-constrained-scroll" if constrained_scroll %>>
   <table
     aria-labelledby="<%= table_title %>"
     data-fixed-columns-count="<%= table_definition.fixed_columns_count %>"
